@@ -12,6 +12,7 @@ export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (data: { email: string; password: string }) => Promise<boolean>;
+  register: (data: { email: string; password: string; name?: string }) => Promise<boolean>;
   logout: () => Promise<void>;
   checkMe: () => Promise<void>;
 }
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   login: async () => false,
+  register: async () => false,
   logout: async () => {},
   checkMe: async () => {},
 });
@@ -45,6 +47,28 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Erreur lors de la connexion:", error);
       return false; // Connexion échouée
+    }
+  };
+
+  const register = async ({
+    email,
+    password,
+    name,
+  }: {
+    email: string;
+    password: string;
+    name?: string;
+  }): Promise<boolean> => {
+    try {
+      const response = await api.post("register", {
+        json: { email, password, name },
+      });
+      const userData = await response.json<User>();
+      setUser(userData);
+      return true; // Inscription réussie
+    } catch (error) {
+      console.error("Erreur lors de l'inscription:", error);
+      return false; // Inscription échouée
     }
   };
 
@@ -85,7 +109,7 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, checkMe }}>
+    <AuthContext.Provider value={{ user, isLoading, login, register, logout, checkMe }}>
       {children}
     </AuthContext.Provider>
   );
