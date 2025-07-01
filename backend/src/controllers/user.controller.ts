@@ -23,17 +23,8 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
     password: string;
   };
 
-  if (!email || !password) {
-    return reply.code(400).send({ error: "Email et mot de passe sont obligatoires." });
-  }
-
-  // Vérifier si l'utilisateur existe déjà
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (existingUser) {
-    return reply.code(409).send({ error: "Un utilisateur avec cet email existe déjà." });
+  if (!password) {
+    return reply.code(400).send({ error: "Le mot de passe est obligatoire." });
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -44,21 +35,6 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
       name,
       password: hashedPassword,
     },
-  });
-
-  // Générer le token JWT automatiquement après l'inscription
-  const token = await reply.jwtSign({ 
-    id: user.id, 
-    email: user.email 
-  });
-
-  // Définir le cookie httpOnly
-  reply.setCookie('authToken', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 jours
-    path: '/'
   });
 
   const { password: _, ...userSafe } = user;
