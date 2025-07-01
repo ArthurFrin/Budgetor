@@ -87,7 +87,7 @@ export async function loginUser(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function logoutUser(request: FastifyRequest, reply: FastifyReply) {
-  // Supprimer le cookie d'authentification
+
   reply.clearCookie('authToken', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -97,6 +97,7 @@ export async function logoutUser(request: FastifyRequest, reply: FastifyReply) {
 
   return reply.send({ message: "Déconnexion réussie." });
 }
+
 
 export async function getCurrentUser(request: FastifyRequest, reply: FastifyReply) {
   try {

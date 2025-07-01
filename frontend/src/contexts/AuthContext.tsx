@@ -38,9 +38,6 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const response = await api.post("login", {
         json: { email, password },
-        headers: {
-          "Content-Type": "application/json",
-        },
       });
       const userData = await response.json<User>();
       setUser(userData);
@@ -53,7 +50,10 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await api.post("logout");
+      await api.post("logout", {
+        json: {},
+      });
+
       setUser(null);
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
