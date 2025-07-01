@@ -2,10 +2,19 @@ import { Route, Routes } from "react-router";
 import Home from "@/pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthContext, AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./components/MainLayout";
+import { useContext, useEffect } from "react";
+
 
 function App() {
+  const { checkMe } =  useContext(AuthContext)
+
+  useEffect(() => {
+    checkMe().catch((error) => {
+      console.error("Erreur lors de la vérification de l'utilisateur :", error);
+    });
+  }, [checkMe]);
   return (
     <AuthProvider>
       <Routes>

@@ -1,4 +1,4 @@
-import { createContext, useState, type ReactNode } from "react";
+import { createContext, useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 
 export interface User {
@@ -10,20 +10,31 @@ export interface User {
 
 export interface AuthContextType {
   user: User | null;
+  isLoading: boolean;
   login: (data: { email: string; password: string }) => Promise<boolean>;
   logout: () => Promise<void>;
+  checkMe: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
+  isLoading: true,
   login: async () => false,
   logout: async () => {},
+  checkMe: async () => {},
 });
 
 const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const login = async ({ email, password }: { email: string; password: string }): Promise<boolean> => {
+  const login = async ({
+    email,
+    password,
+  }: {
+    email: string;
+    password: string;
+  }): Promise<boolean> => {
     try {
       const response = await api.post("login", {
         json: { email, password },
@@ -48,13 +59,36 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Erreur lors de la déconnexion:", error);
     }
   };
-return (
-  <AuthContext.Provider
-    value={{ user, login , logout}}
-  >
-    {children}
-  </AuthContext.Provider>
-);
-}
+
+  const checkMe = async () => {
+    console.log("Vérification de l'utilisateur connecté...");
+    try {
+      const response = await api.get("me");
+      if (response.ok) {
+        const userData = await response.json<User>();
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la vérification de l'utilisateur:", error);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    checkMe().catch((error) => {
+      console.error("Erreur lors de la vérification de l'utilisateur :", error);
+    });
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, isLoading, login, logout, checkMe }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
 export { AuthContext, AuthProvider };

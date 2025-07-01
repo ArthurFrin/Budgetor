@@ -5,7 +5,11 @@ import type { ReactNode } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user } = useContext(AuthContext);
+  const { user, isLoading } = useContext(AuthContext);
+
+  if (isLoading) {
+    return <div>Chargement...</div>;
+  }
 
   if (!user) {
     return <Navigate to="/login" replace />;
