@@ -1,12 +1,5 @@
-import { createContext, useState, useEffect, type ReactNode } from "react";
-import ky from "ky";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
-const api = ky.create({
-  prefixUrl: API_URL,
-  credentials: "include",
-});
+import { createContext, useState, type ReactNode } from "react";
+import { api } from "@/lib/api";
 
 export interface User {
   id: string;

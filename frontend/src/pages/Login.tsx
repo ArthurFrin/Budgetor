@@ -29,6 +29,7 @@ function Login() {
       } else {
         setError("Identifiants invalides")
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError("Erreur de connexion")
     } finally {
