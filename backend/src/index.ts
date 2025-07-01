@@ -1,13 +1,26 @@
-import Fastify from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import userRoutes from './routes/user.routes';
+import Fastify from "fastify";
+import { PrismaClient } from "@prisma/client";
+import userRoutes from "./routes/user.routes";
+import jwtPlugin from "./plugin/jwt";
+import fastifyCookie from "@fastify/cookie";
+import fastifyFormbody from "@fastify/formbody";
+import cors from '@fastify/cors'
 
 const prisma = new PrismaClient();
 const app = Fastify({ logger: true });
 
-app.register(userRoutes, { prefix: '/api' });
+app.register(fastifyCookie);
+app.register(fastifyFormbody); // Support pour application/x-www-form-urlencoded
+app.register(jwtPlugin);
+app.register(cors, {
+  origin: true, // Permettre toutes les origines
+  credentials: true, // Autoriser les cookies
+});
 
-app.addHook('onClose', async () => {
+
+app.register(userRoutes, { prefix: "/api" });
+
+app.addHook("onClose", async () => {
   await prisma.$disconnect();
 });
 
