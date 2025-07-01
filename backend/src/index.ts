@@ -1,6 +1,8 @@
 import Fastify from "fastify";
 import { PrismaClient } from "@prisma/client";
 import userRoutes from "./routes/user.routes";
+import categoryRoutes from "./routes/category.routes";
+import purchaseRoutes from "./routes/purchase.routes";
 import jwtPlugin from "./plugin/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyFormbody from "@fastify/formbody";
@@ -19,6 +21,8 @@ app.register(cors, {
 
 
 app.register(userRoutes, { prefix: "/api" });
+app.register(categoryRoutes, { prefix: "/api" });
+app.register(purchaseRoutes, { prefix: "/api" });
 
 app.addHook("onClose", async () => {
   await prisma.$disconnect();
