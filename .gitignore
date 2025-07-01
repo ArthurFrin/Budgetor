@@ -1,0 +1,14 @@
+.DS_Store
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore build output directories
+dist/
+build/
+
+# Ignore log files
+*.log
+
+# Ignore environment variable files
+.env
