@@ -10,7 +10,7 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Plus, Tag, LogOut } from "lucide-react";
+import { LayoutGrid, Plus, Tag, LogOut, Receipt } from "lucide-react";
 import logo from "../assets/logo.webp"; // Assuming you have a logo.svg in your assets folder
 
 export default function MainLayout() {
@@ -39,6 +39,10 @@ export default function MainLayout() {
           <Link to="/purchase/new" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
             <Plus />
             <span>Ajouter une dépense</span>
+          </Link>
+          <Link to="/purchases" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
+            <Receipt />
+            <span>Mes dépenses</span>
           </Link>
           <Link to="/categories" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
             <Tag />

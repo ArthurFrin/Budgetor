@@ -9,6 +9,7 @@ import { useContext, useEffect } from "react";
 import NewPurchase from "./pages/NewPurchase";
 import Categories from "./pages/Categories";
 import Profile from "./pages/Profile";
+import MyPurchases from "./pages/MyPurchases";
 
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         >
           <Route path="/" element={<Home />} />
           <Route path="/purchase/new" element={<NewPurchase />} />
+          <Route path="/purchases" element={<MyPurchases />} />
           <Route path="/categories" element={<Categories />} />
           <Route path="/profile" element={<Profile />} />
 
