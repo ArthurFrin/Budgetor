@@ -1,11 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
-const prisma = new PrismaClient();
-
 export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
-  const users = await prisma.user.findMany({
+  const users = await request.server.prisma.user.findMany({
     select: {
       id: true,
       email: true,
@@ -29,7 +26,7 @@ export async function createUser(request: FastifyRequest, reply: FastifyReply) {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await prisma.user.create({
+  const user = await request.server.prisma.user.create({
     data: {
       email,
       name,
@@ -52,7 +49,7 @@ export async function loginUser(request: FastifyRequest, reply: FastifyReply) {
     return reply.code(400).send({ error: "Email et mot de passe sont requis." });
   }
 
-  const user = await prisma.user.findUnique({
+  const user = await  request.server.prisma.user.findUnique({
     where: { email },
   });
 
@@ -107,7 +104,7 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
     const payload = request.user as { id: string; email: string };
     
     // Récupérer les données complètes de l'utilisateur
-    const user = await prisma.user.findUnique({
+    const user = await  request.server.prisma.user.findUnique({
       where: { id: payload.id },
       select: {
         id: true,

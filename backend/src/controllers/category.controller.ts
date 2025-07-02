@@ -1,15 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import driver from '../config/neo4j';
-
-const prisma = new PrismaClient();
 
 export async function getCategories(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify();
     const user = request.user as { id: string; email: string };
     
-    const categories = await prisma.category.findMany({
+    const categories = await request.server.prisma.category.findMany({
       where: {
         userId: user.id
       },
@@ -38,7 +34,7 @@ export async function createCategory(request: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ error: "Le nom de la catégorie est obligatoire." });
     }
 
-    const category = await prisma.category.create({
+    const category = await request.server.prisma.category.create({
       data: {
         name,
         description,
@@ -68,7 +64,7 @@ export async function updateCategory(request: FastifyRequest, reply: FastifyRepl
       color?: string;
     };
 
-    const category = await prisma.category.update({
+    const category = await request.server.prisma.category.update({
       where: { 
         id,
         userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
@@ -100,9 +96,9 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
     const { id } = request.params as { id: string };
 
     // Vérifier s'il y a des achats liés à cette catégorie dans Neo4j
-    const session = driver.session();
+    const session = request.server.neo4j.getSession();
     try {
-      const result = await session.executeRead(tx => 
+      const result = await session.executeRead((tx: any) => 
         tx.run(
           `
           MATCH (p:Purchase)-[:BELONGS_TO]->(c:Category {id: $categoryId})
@@ -123,7 +119,7 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
       await session.close();
     }
 
-    await prisma.category.delete({
+    await request.server.prisma.category.delete({
       where: { 
         id,
         userId: user.id // S'assurer que la catégorie appartient à l'utilisateur

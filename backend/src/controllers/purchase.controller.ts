@@ -1,8 +1,4 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-import purchaseService from '../services/purchase.service';
-
-const prisma = new PrismaClient();
 
 export async function getPurchases(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -17,7 +13,7 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset?: string;
     };
 
-    const purchases = await purchaseService.getPurchases({
+    const purchases = await request.server.neo4j.getPurchases({
       userId: user.id,
       categoryId,
       startDate,
@@ -79,7 +75,7 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
     }
 
     // Vérifier que la catégorie existe (toujours via Prisma)
-    const categoryObj = await prisma.category.findUnique({
+    const categoryObj = await request.server.prisma.category.findUnique({
       where: { id: categoryId }
     });
 
@@ -90,7 +86,7 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    const purchase = await purchaseService.createPurchase({
+    const purchase = await request.server.neo4j.createPurchase({
       description,
       price,
       date,
@@ -127,7 +123,7 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
 
     // Vérifier que la catégorie existe si elle est fournie
     if (categoryId) {
-      const category = await prisma.category.findUnique({
+      const category = await request.server.prisma.category.findUnique({
         where: { id: categoryId }
       });
 
@@ -143,7 +139,7 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (tags !== undefined) updateData.tags = tags;
 
-    const purchase = await purchaseService.updatePurchase(id, user.id, updateData);
+    const purchase = await request.server.neo4j.updatePurchase(id, user.id, updateData);
 
     if (!purchase) {
       return reply.code(404).send({ error: "Achat non trouvé." });
@@ -163,7 +159,7 @@ export async function deletePurchase(request: FastifyRequest, reply: FastifyRepl
 
     const { id } = request.params as { id: string };
 
-    const success = await purchaseService.deletePurchase(id, user.id);
+    const success = await request.server.neo4j.deletePurchase(id, user.id);
 
     if (!success) {
       return reply.code(404).send({ error: "Achat non trouvé." });
@@ -186,7 +182,7 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       endDate?: string;
     };
 
-    const stats = await purchaseService.getPurchaseStats({
+    const stats = await request.server.neo4j.getPurchaseStats({
       userId: user.id,
       startDate,
       endDate
