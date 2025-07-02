@@ -1,55 +1,66 @@
-import { useState, useContext } from "react"
-import { useNavigate, Link } from "react-router"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { AuthContext } from "@/contexts/AuthContext"
+import { useState, useContext } from "react";
+import { useNavigate, Link } from "react-router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { AuthContext } from "@/contexts/AuthContext";
+
+// Schéma Zod de validation
+const registerSchema = z.object({
+  email: z.string().email("Email invalide"),
+  name: z.string().optional(),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
+  confirmPassword: z.string().min(6, "La confirmation doit contenir au moins 6 caractères")
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"]
+});
+
+// Types dérivés de Zod
+type RegisterFormData = z.infer<typeof registerSchema>;
 
 function Register() {
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
-  
-  const { register } = useContext(AuthContext)
-  const navigate = useNavigate()
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+  const { register: registerUser } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    // Validation du mot de passe
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas")
-      setIsLoading(false)
-      return
-    }
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
 
-    if (password.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères")
-      setIsLoading(false)
-      return
-    }
-    
+  const onSubmit = async (data: RegisterFormData) => {
+    setIsLoading(true);
+    setSubmitError("");
+
     try {
-      const success = await register({ email, password, name })
+      const success = await registerUser({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+      });
       if (success) {
-        console.log("Inscription réussie !")
-        navigate("/login")
+        console.log("Inscription réussie !");
+        navigate("/login");
       } else {
-        setError("Erreur lors de l'inscription. Vérifiez vos informations.")
+        setSubmitError("Erreur lors de l'inscription. Vérifiez vos informations.");
       }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      setError("Erreur lors de l'inscription")
+      setSubmitError("Erreur lors de l'inscription");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -63,18 +74,19 @@ function Register() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
                 disabled={isLoading}
+                {...register("email")}
               />
+              {errors.email && (
+                <p className="text-sm text-red-600">{errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="name">Nom (optionnel)</Label>
@@ -82,10 +94,12 @@ function Register() {
                 id="name"
                 type="text"
                 placeholder="Votre nom"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
                 disabled={isLoading}
+                {...register("name")}
               />
+              {errors.name && (
+                <p className="text-sm text-red-600">{errors.name.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Mot de passe</Label>
@@ -93,12 +107,12 @@ function Register() {
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
                 disabled={isLoading}
-                minLength={6}
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="text-sm text-red-600">{errors.password.message}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
@@ -106,16 +120,16 @@ function Register() {
                 id="confirmPassword"
                 type="password"
                 placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
                 disabled={isLoading}
-                minLength={6}
+                {...register("confirmPassword")}
               />
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-600">{errors.confirmPassword.message}</p>
+              )}
             </div>
-            {error && (
+            {submitError && (
               <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
-                {error}
+                {submitError}
               </div>
             )}
             <Button 

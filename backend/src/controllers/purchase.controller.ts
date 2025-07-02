@@ -86,7 +86,6 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
 
     const purchase = await prisma.purchase.create({
       data: {
-        title,
         description,
         price,
         date: new Date(date),
