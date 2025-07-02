@@ -1,21 +1,6 @@
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
-
-export interface User {
-  id: string;
-  email: string;
-  name?: string;
-  createdAt: string;
-}
-
-export interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  login: (data: { email: string; password: string }) => Promise<boolean>;
-  register: (data: { email: string; password: string; name?: string }) => Promise<boolean>;
-  logout: () => Promise<void>;
-  checkMe: () => Promise<void>;
-}
+import type { User, LoginData, RegisterData, AuthContextType } from "@/types";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,

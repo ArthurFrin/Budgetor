@@ -1,5 +1,5 @@
 // components/MainLayout.tsx
-import { Outlet, useNavigate } from "react-router";
+import { Link, Outlet, useNavigate } from "react-router";
 import {
   Sidebar,
   SidebarContent,
@@ -10,6 +10,7 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { LayoutGrid, Plus, Tag } from "lucide-react";
 
 export default function MainLayout() {
   const { user, logout } = useContext(AuthContext);
@@ -27,7 +28,18 @@ export default function MainLayout() {
           <h2 className="text-lg font-semibold">Navigation</h2>
         </SidebarHeader>
         <SidebarContent>
-          {/* Ajoute ton menu ici */}
+          <Link to="/" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
+            <LayoutGrid />
+            <span>Dashbord</span>
+          </Link>
+          <Link to="/purchase/new" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
+            <Plus />
+            <span>Ajouter une dépense</span>
+          </Link>
+          <Link to="/categories" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
+            <Tag />
+            <span>Mes catégories</span>
+          </Link>
         </SidebarContent>
         <div className="mt-auto p-4 border-t flex flex-col space-y-2">
           {user && (

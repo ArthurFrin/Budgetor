@@ -17,6 +17,8 @@ app.register(jwtPlugin);
 app.register(cors, {
   origin: true, // Permettre toutes les origines
   credentials: true, // Autoriser les cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Méthodes autorisées
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'], // En-têtes autorisés
 });
 
 

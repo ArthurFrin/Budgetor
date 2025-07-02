@@ -57,17 +57,39 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
     await request.jwtVerify();
     const user = request.user as { id: string; email: string };
 
-    const { title, description, price, date, categoryId } = request.body as {
-      title: string;
+    console.log("Body reçu:", request.body);
+
+    const body = request.body as {
       description?: string;
       price: number;
       date: string;
-      categoryId: string;
+      categoryId?: string;
+      category?: string;
+      tags?: string[];
     };
+    
+    const { description, price, date, tags } = body;
+    
+    const categoryId = body.categoryId || body.category;
 
-    if (!title || !price || !date || !categoryId) {
+    if (!price) {
       return reply.code(400).send({ 
-        error: "Le titre, le prix, la date et la catégorie sont obligatoires." 
+        error: "Le prix est obligatoire.", 
+        reçu: { price }
+      });
+    }
+    
+    if (!date) {
+      return reply.code(400).send({ 
+        error: "La date est obligatoire.",
+        reçu: { date }
+      });
+    }
+    
+    if (!categoryId) {
+      return reply.code(400).send({ 
+        error: "La catégorie est obligatoire.",
+        reçu: { categoryId: body.categoryId, category: body.category }
       });
     }
 
@@ -75,23 +97,33 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
     }
 
-    // Vérifier que la catégorie existe
-    const category = await prisma.category.findUnique({
+    const categoryObj = await prisma.category.findUnique({
       where: { id: categoryId }
     });
 
-    if (!category) {
-      return reply.code(404).send({ error: "Catégorie non trouvée." });
+    if (!categoryObj) {
+      return reply.code(404).send({ 
+        error: "Catégorie non trouvée.", 
+        categoryId: categoryId
+      });
+    }
+
+    let purchaseData: any = {
+      description,
+      price,
+      date: new Date(date),
+      userId: user.id,
+      categoryId,
+    };
+
+    if (tags && tags.length > 0) {
+      purchaseData.tags = {
+        set: tags,
+      };
     }
 
     const purchase = await prisma.purchase.create({
-      data: {
-        description,
-        price,
-        date: new Date(date),
-        userId: user.id,
-        categoryId,
-      },
+      data: purchaseData,
       include: {
         category: true,
       },

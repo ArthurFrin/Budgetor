@@ -6,6 +6,9 @@ import Register from "./pages/Register";
 import { AuthContext, AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./components/MainLayout";
 import { useContext, useEffect } from "react";
+import NewPurchase from "./pages/NewPurchase";
+import Categories from "./pages/Categories";
+import Profile from "./pages/Profile";
 
 
 function App() {
@@ -28,6 +31,10 @@ function App() {
           }
         >
           <Route path="/" element={<Home />} />
+          <Route path="/purchase/new" element={<NewPurchase />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/profile" element={<Profile />} />
+
           {/* autres routes protégées */}
         </Route>
 

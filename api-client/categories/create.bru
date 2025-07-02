@@ -1,0 +1,19 @@
+meta {
+  name: create
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/categories
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Alimentation",
+    "description": "achats pour miam miam",
+    "color": "red"
+  }
+}
