@@ -75,7 +75,7 @@ function NewPurchase() {
   };
 
   return (
-    <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex items-center min-h-screen justify-center">
       <Card className="w-full max-w-lg">
         <CardHeader>
           <CardTitle className="text-xl font-bold text-center">Ajouter une dépense</CardTitle>

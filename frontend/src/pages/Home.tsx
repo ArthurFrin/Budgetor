@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import type { PurchaseStats } from "@/types/purchase";
 import { useEffect, useState } from "react";
+import { ChartPieDonutText } from "@/components/ChartPieDonutText";
 
 
 
@@ -22,7 +23,7 @@ function Home() {
     fetchStats();
   }, []);
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto">
       <h1 className="text-2xl font-bold mb-4">Home</h1>
       {stats ? (
         <div>
@@ -36,7 +37,10 @@ function Home() {
               </li>
             ))}
           </ul>
+          <ChartPieDonutText categoriesStats={stats.categoriesStats} />
+
         </div>
+
       ) : (
         <p>Loading stats...</p>
       )}

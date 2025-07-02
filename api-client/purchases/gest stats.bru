@@ -1,0 +1,16 @@
+meta {
+  name: gest stats
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{host}}/purchases/stats?startDate=2025-06-01&endDate=2025-07-06
+  body: none
+  auth: inherit
+}
+
+params:query {
+  startDate: 2025-06-01
+  endDate: 2025-07-06
+}

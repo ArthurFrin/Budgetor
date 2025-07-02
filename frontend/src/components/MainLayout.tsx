@@ -60,7 +60,7 @@ export default function MainLayout() {
         </div>
       </Sidebar>
       <SidebarInset>
-        <main className="p-4">
+        <main>
           <Outlet />
         </main>
       </SidebarInset>
