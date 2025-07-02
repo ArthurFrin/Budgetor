@@ -1,11 +1,18 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import driver from '../config/neo4j';
 
 const prisma = new PrismaClient();
 
 export async function getCategories(request: FastifyRequest, reply: FastifyReply) {
   try {
+    await request.jwtVerify();
+    const user = request.user as { id: string; email: string };
+    
     const categories = await prisma.category.findMany({
+      where: {
+        userId: user.id
+      },
       orderBy: {
         name: 'asc'
       }
@@ -18,6 +25,9 @@ export async function getCategories(request: FastifyRequest, reply: FastifyReply
 
 export async function createCategory(request: FastifyRequest, reply: FastifyReply) {
   try {
+    await request.jwtVerify();
+    const user = request.user as { id: string; email: string };
+    
     const { name, description, color } = request.body as {
       name: string;
       description?: string;
@@ -33,6 +43,7 @@ export async function createCategory(request: FastifyRequest, reply: FastifyRepl
         name,
         description,
         color,
+        userId: user.id,
       },
     });
 
@@ -47,6 +58,9 @@ export async function createCategory(request: FastifyRequest, reply: FastifyRepl
 
 export async function updateCategory(request: FastifyRequest, reply: FastifyReply) {
   try {
+    await request.jwtVerify();
+    const user = request.user as { id: string; email: string };
+    
     const { id } = request.params as { id: string };
     const { name, description, color } = request.body as {
       name?: string;
@@ -55,7 +69,10 @@ export async function updateCategory(request: FastifyRequest, reply: FastifyRepl
     };
 
     const category = await prisma.category.update({
-      where: { id },
+      where: { 
+        id,
+        userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
+      },
       data: {
         ...(name && { name }),
         ...(description !== undefined && { description }),
@@ -77,21 +94,40 @@ export async function updateCategory(request: FastifyRequest, reply: FastifyRepl
 
 export async function deleteCategory(request: FastifyRequest, reply: FastifyReply) {
   try {
+    await request.jwtVerify();
+    const user = request.user as { id: string; email: string };
+    
     const { id } = request.params as { id: string };
 
-    // Vérifier s'il y a des achats liés à cette catégorie
-    const purchasesCount = await prisma.purchase.count({
-      where: { categoryId: id }
-    });
-
-    if (purchasesCount > 0) {
-      return reply.code(409).send({ 
-        error: "Impossible de supprimer cette catégorie car elle contient des achats." 
-      });
+    // Vérifier s'il y a des achats liés à cette catégorie dans Neo4j
+    const session = driver.session();
+    try {
+      const result = await session.executeRead(tx => 
+        tx.run(
+          `
+          MATCH (p:Purchase)-[:BELONGS_TO]->(c:Category {id: $categoryId})
+          RETURN count(p) as purchaseCount
+          `,
+          { categoryId: id }
+        )
+      );
+      
+      const purchasesCount = result.records[0].get('purchaseCount').toNumber();
+      
+      if (purchasesCount > 0) {
+        return reply.code(409).send({ 
+          error: "Impossible de supprimer cette catégorie car elle contient des achats." 
+        });
+      }
+    } finally {
+      await session.close();
     }
 
     await prisma.category.delete({
-      where: { id },
+      where: { 
+        id,
+        userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
+      },
     });
 
     return reply.send({ message: "Catégorie supprimée avec succès." });

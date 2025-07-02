@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { PrismaClient } from '@prisma/client';
+import purchaseService from '../services/purchase.service';
 
 const prisma = new PrismaClient();
 
@@ -16,39 +17,19 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset?: string;
     };
 
-    const where: any = {
+    const purchases = await purchaseService.getPurchases({
       userId: user.id,
-    };
-
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (startDate || endDate) {
-      where.date = {};
-      if (startDate) {
-        where.date.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.date.lte = new Date(endDate);
-      }
-    }
-
-    const purchases = await prisma.purchase.findMany({
-      where,
-      include: {
-        category: true,
-      },
-      orderBy: {
-        date: 'desc'
-      },
-      take: limit ? parseInt(limit) : undefined,
-      skip: offset ? parseInt(offset) : undefined,
+      categoryId,
+      startDate,
+      endDate,
+      limit: limit ? parseInt(limit) : undefined,
+      offset: offset ? parseInt(offset) : undefined
     });
 
     return reply.send(purchases);
   } catch (error) {
-    return reply.code(401).send({ error: "Non authentifié." });
+    console.error('Erreur lors de la récupération des achats:', error);
+    return reply.code(500).send({ error: "Erreur lors de la récupération des achats." });
   }
 }
 
@@ -97,6 +78,7 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
     }
 
+    // Vérifier que la catégorie existe (toujours via Prisma)
     const categoryObj = await prisma.category.findUnique({
       where: { id: categoryId }
     });
@@ -108,29 +90,18 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
-    let purchaseData: any = {
+    const purchase = await purchaseService.createPurchase({
       description,
       price,
-      date: new Date(date),
+      date,
       userId: user.id,
       categoryId,
-    };
-
-    if (tags && tags.length > 0) {
-      purchaseData.tags = {
-        set: tags,
-      };
-    }
-
-    const purchase = await prisma.purchase.create({
-      data: purchaseData,
-      include: {
-        category: true,
-      },
+      tags
     });
 
     return reply.code(201).send(purchase);
   } catch (error) {
+    console.error('Erreur lors de la création de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la création de l'achat." });
   }
 }
@@ -141,25 +112,17 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
     const user = request.user as { id: string; email: string };
 
     const { id } = request.params as { id: string };
-    const { title, description, price, date, categoryId } = request.body as {
+    const { title, description, price, date, categoryId, tags } = request.body as {
       title?: string;
       description?: string;
       price?: number;
       date?: string;
       categoryId?: string;
+      tags?: string[];
     };
 
     if (price !== undefined && price <= 0) {
       return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
-    }
-
-    // Vérifier que l'achat appartient à l'utilisateur
-    const existingPurchase = await prisma.purchase.findFirst({
-      where: { id, userId: user.id }
-    });
-
-    if (!existingPurchase) {
-      return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
     // Vérifier que la catégorie existe si elle est fournie
@@ -173,22 +136,22 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
       }
     }
 
-    const purchase = await prisma.purchase.update({
-      where: { id },
-      data: {
-        ...(title && { title }),
-        ...(description !== undefined && { description }),
-        ...(price && { price }),
-        ...(date && { date: new Date(date) }),
-        ...(categoryId && { categoryId }),
-      },
-      include: {
-        category: true,
-      },
-    });
+    const updateData: any = {};
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+    if (date !== undefined) updateData.date = date;
+    if (categoryId !== undefined) updateData.categoryId = categoryId;
+    if (tags !== undefined) updateData.tags = tags;
+
+    const purchase = await purchaseService.updatePurchase(id, user.id, updateData);
+
+    if (!purchase) {
+      return reply.code(404).send({ error: "Achat non trouvé." });
+    }
 
     return reply.send(purchase);
   } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la mise à jour de l'achat." });
   }
 }
@@ -200,21 +163,15 @@ export async function deletePurchase(request: FastifyRequest, reply: FastifyRepl
 
     const { id } = request.params as { id: string };
 
-    // Vérifier que l'achat appartient à l'utilisateur
-    const existingPurchase = await prisma.purchase.findFirst({
-      where: { id, userId: user.id }
-    });
+    const success = await purchaseService.deletePurchase(id, user.id);
 
-    if (!existingPurchase) {
+    if (!success) {
       return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
-    await prisma.purchase.delete({
-      where: { id },
-    });
-
     return reply.send({ message: "Achat supprimé avec succès." });
   } catch (error) {
+    console.error('Erreur lors de la suppression de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la suppression de l'achat." });
   }
 }
@@ -229,63 +186,15 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       endDate?: string;
     };
 
-    const where: any = {
+    const stats = await purchaseService.getPurchaseStats({
       userId: user.id,
-    };
-
-    if (startDate || endDate) {
-      where.date = {};
-      if (startDate) {
-        where.date.gte = new Date(startDate);
-      }
-      if (endDate) {
-        where.date.lte = new Date(endDate);
-      }
-    }
-
-    // Total des achats
-    const totalAmount = await prisma.purchase.aggregate({
-      where,
-      _sum: {
-        price: true
-      }
+      startDate,
+      endDate
     });
 
-    // Nombre d'achats
-    const totalCount = await prisma.purchase.count({ where });
-
-    // Statistiques par catégorie
-    const statsByCategory = await prisma.purchase.groupBy({
-      by: ['categoryId'],
-      where,
-      _sum: {
-        price: true
-      },
-      _count: {
-        _all: true
-      }
-    });
-
-    // Enrichir avec les noms des catégories
-    const categoriesData = await Promise.all(
-      statsByCategory.map(async (stat) => {
-        const category = await prisma.category.findUnique({
-          where: { id: stat.categoryId }
-        });
-        return {
-          category,
-          totalAmount: stat._sum.price || 0,
-          count: stat._count._all
-        };
-      })
-    );
-
-    return reply.send({
-      totalAmount: totalAmount._sum.price || 0,
-      totalCount,
-      categoriesStats: categoriesData
-    });
+    return reply.send(stats);
   } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
     return reply.code(500).send({ error: "Erreur lors de la récupération des statistiques." });
   }
 }

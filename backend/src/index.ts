@@ -7,6 +7,7 @@ import jwtPlugin from "./plugin/jwt";
 import fastifyCookie from "@fastify/cookie";
 import fastifyFormbody from "@fastify/formbody";
 import cors from '@fastify/cors'
+import driver, { verifyConnectivity } from "./config/neo4j";
 
 const prisma = new PrismaClient();
 const app = Fastify({ logger: true });
@@ -28,12 +29,27 @@ app.register(purchaseRoutes, { prefix: "/api" });
 
 app.addHook("onClose", async () => {
   await prisma.$disconnect();
+  await driver.close();
+  app.log.info('Neo4j et Prisma déconnectés.');
 });
 
-app.listen({ port: 3000 }, (err, address) => {
-  if (err) {
+// Vérifier la connexion à Neo4j avant de démarrer le serveur
+const startServer = async () => {
+  try {
+    // Vérifier la connexion à Neo4j
+    const isNeo4jConnected = await verifyConnectivity();
+    if (!isNeo4jConnected) {
+      app.log.error('Impossible de se connecter à Neo4j. Vérifiez votre configuration.');
+      process.exit(1);
+    }
+
+    // Démarrer le serveur
+    await app.listen({ port: 3000 });
+    app.log.info(`Server listening at ${app.server.address()}`);
+  } catch (err) {
     app.log.error(err);
     process.exit(1);
   }
-  app.log.info(`Server listening at ${address}`);
-});
+};
+
+startServer();

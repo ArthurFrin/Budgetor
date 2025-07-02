@@ -13,32 +13,23 @@ model User {
   password   String
   name       String?
   createdAt  DateTime   @default(now())
-  purchases  Purchase[]
+  categories Category[] // Relation avec les catégories
 }
 
 model Category {
   id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  name        String     @unique
+  name        String     // Plus d'unique constraint car plusieurs utilisateurs peuvent avoir la même catégorie
   description String?
   color       String?    // Couleur pour l'interface utilisateur (optionnel)
   createdAt   DateTime   @default(now())
-  purchases   Purchase[]
+  
+  // Relation avec l'utilisateur
+  userId     String     @db.ObjectId
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Index composé pour garantir l'unicité par utilisateur
+  @@unique([name, userId])
 }
 
-model Purchase {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  price       Float    // Prix de l'achat
-  description String?  // Description optionnelle
-  date        DateTime // Date de l'achat
-  tags        String[] // Tags pour catégoriser l'achat (optionnel)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  // Relations
-  userId     String @db.ObjectId
-  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  categoryId String   @db.ObjectId
-  category   Category @relation(fields: [categoryId], references: [id])
-}
+
 

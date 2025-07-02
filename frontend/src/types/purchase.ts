@@ -30,3 +30,13 @@ export interface UpdatePurchaseData {
   tags?: string[];
   categoryId?: string;
 }
+
+export interface PurchaseStats {
+  totalAmount: number;
+  totalCount: number;
+  categoriesStats: {
+    category: Category & { description?: string };
+    totalAmount: number;
+    count: number;
+  }[];
+}
