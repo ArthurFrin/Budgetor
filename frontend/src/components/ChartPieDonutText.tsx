@@ -19,12 +19,12 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { type PurchaseStats } from "@/types/purchase";
+import { type StatsWithCategories } from "@/hooks/use-stats";
 
 export function ChartPieDonutText({
   categoriesStats,
 }: {
-  categoriesStats: PurchaseStats["categoriesStats"];
+  categoriesStats: StatsWithCategories["categoriesStats"];
 }) {
   const chartData = React.useMemo(
     () =>
@@ -38,7 +38,6 @@ export function ChartPieDonutText({
 
   const totalAmount = chartData.reduce((acc, curr) => acc + curr.amount, 0);
 
-  // Si tu veux garder le même ChartConfig structurellement :
   const chartConfig = {
     amount: {
       label: "Montant",

@@ -34,9 +34,16 @@ export interface UpdatePurchaseData {
 export interface PurchaseStats {
   totalAmount: number;
   totalCount: number;
-  categoriesStats: {
-    category: Category & { description?: string };
-    totalAmount: number;
-    count: number;
-  }[];
+  categoriesStats: (
+    | {
+        categoryId: string;
+        totalAmount: number;
+        count: number;
+      }
+    | {
+        category: { id: string };
+        totalAmount: number;
+        count: number;
+      }
+  )[];
 }
