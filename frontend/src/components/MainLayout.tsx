@@ -10,7 +10,8 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Plus, Tag } from "lucide-react";
+import { LayoutGrid, Plus, Tag, LogOut } from "lucide-react";
+import logo from "../assets/logo.webp"; // Assuming you have a logo.svg in your assets folder
 
 export default function MainLayout() {
   const { user, logout } = useContext(AuthContext);
@@ -25,7 +26,10 @@ export default function MainLayout() {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <h2 className="text-lg font-semibold">Navigation</h2>
+          <div className="flex items-center">
+          <img src={logo} alt="logo" className="w-15 object-cover" />
+          <h2 className="text-lg font-semibold">Balance ton compte</h2>
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <Link to="/" className="p-2 hover:bg-gray-100 flex items-center space-x-2">
@@ -49,10 +53,12 @@ export default function MainLayout() {
               </div>
               <div className="font-medium truncate">{user.name ?? user.email}</div>
               <Button
-                variant="destructive"
+                variant="ghost"
                 size="sm"
                 onClick={handleLogout}
+                className="text-muted-foreground hover:text-red-600 hover:bg-red-50 justify-start p-2 gap-2"
               >
+                <LogOut className="h-4 w-4" />
                 Se déconnecter
               </Button>
             </>

@@ -6,7 +6,7 @@ import { ChartPieDonutText } from "@/components/ChartPieDonutText";
 function Home() {
   const { stats, loading, error } = useStats();
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto p-8">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
       
       {loading && !stats ? (
