@@ -142,11 +142,11 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
     await request.server.prisma.category.delete({
       where: { 
         id,
-        userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
+        userId: user.id
       },
     });
 
-    // Invalidar le cache des catégories de l'utilisateur
+    // Invalider le cache des catégories de l'utilisateur
     await RedisHelper.deleteCache(request.server.redis, `categories:${user.id}`);
 
     return reply.send({ message: "Catégorie supprimée avec succès." });
