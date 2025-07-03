@@ -13,6 +13,7 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset?: string;
     };
 
+    // Récupérer les achats depuis Neo4j
     const purchases = await request.server.neo4j.getPurchases({
       userId: user.id,
       categoryId,
@@ -22,7 +23,22 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset: offset ? parseInt(offset) : undefined
     });
 
-    return reply.send(purchases);
+    // Récupérer les catégories depuis Prisma
+    const categoryIds = [...new Set(purchases.map(p => p.categoryId))];
+    const categories = await request.server.prisma.category.findMany({
+      where: {
+        id: { in: categoryIds }
+      }
+    });
+
+    // Mapper les catégories aux achats
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const purchasesWithCategories = purchases.map(purchase => ({
+      ...purchase,
+      category: categoryMap.get(purchase.categoryId) || null
+    }));
+
+    return reply.send(purchasesWithCategories);
   } catch (error) {
     console.error('Erreur lors de la récupération des achats:', error);
     return reply.code(500).send({ error: "Erreur lors de la récupération des achats." });
@@ -86,6 +102,7 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       });
     }
 
+    // Créer l'achat dans Neo4j
     const purchase = await request.server.neo4j.createPurchase({
       description,
       price,
@@ -95,7 +112,13 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       tags
     });
 
-    return reply.code(201).send(purchase);
+    // Ajouter les détails de la catégorie
+    const purchaseWithCategory = {
+      ...purchase,
+      category: categoryObj
+    };
+
+    return reply.code(201).send(purchaseWithCategory);
   } catch (error) {
     console.error('Erreur lors de la création de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la création de l'achat." });
@@ -139,13 +162,24 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
     if (categoryId !== undefined) updateData.categoryId = categoryId;
     if (tags !== undefined) updateData.tags = tags;
 
+    // Mettre à jour l'achat dans Neo4j
     const purchase = await request.server.neo4j.updatePurchase(id, user.id, updateData);
 
     if (!purchase) {
       return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
-    return reply.send(purchase);
+    // Récupérer les détails de la catégorie depuis Prisma
+    const category = await request.server.prisma.category.findUnique({
+      where: { id: purchase.categoryId }
+    });
+
+    const purchaseWithCategory = {
+      ...purchase,
+      category: category || null
+    };
+
+    return reply.send(purchaseWithCategory);
   } catch (error) {
     console.error('Erreur lors de la mise à jour de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la mise à jour de l'achat." });
@@ -182,13 +216,36 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       endDate?: string;
     };
 
+    // Récupérer les statistiques depuis Neo4j
     const stats = await request.server.neo4j.getPurchaseStats({
       userId: user.id,
       startDate,
       endDate
     });
 
-    return reply.send(stats);
+    // Récupérer les catégories depuis Prisma
+    const categoryIds = stats.categoriesStats.map(stat => stat.categoryId);
+    const categories = await request.server.prisma.category.findMany({
+      where: {
+        id: { in: categoryIds }
+      }
+    });
+
+    // Mapper les catégories aux statistiques
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const categoriesStats = stats.categoriesStats.map(stat => ({
+      category: categoryMap.get(stat.categoryId) || { id: stat.categoryId },
+      totalAmount: stat.totalAmount,
+      count: stat.count
+    }));
+
+    const statsWithCategories = {
+      totalAmount: stats.totalAmount,
+      totalCount: stats.totalCount,
+      categoriesStats
+    };
+
+    return reply.send(statsWithCategories);
   } catch (error) {
     console.error('Erreur lors de la récupération des statistiques:', error);
     return reply.code(500).send({ error: "Erreur lors de la récupération des statistiques." });

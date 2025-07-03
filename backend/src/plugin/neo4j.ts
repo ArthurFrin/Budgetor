@@ -105,12 +105,6 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
     };
   }
 
-  function formatCategory(node: any): any {
-    return {
-      id: node.id
-    };
-  }
-
   async function ensureUserExists(userId: string): Promise<void> {
     const session = getSession();
     try {
@@ -183,7 +177,7 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
 
       return {
         ...formatPurchase(record.get('p').properties),
-        category: formatCategory(record.get('c').properties)
+        categoryId: record.get('c').properties.id
       };
     } finally {
       await session.close();
@@ -241,7 +235,7 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
 
       return result.records.map(record => ({
         ...formatPurchase(record.get('p').properties),
-        category: formatCategory(record.get('c').properties)
+        categoryId: record.get('c').properties.id
       }));
     } finally {
       await session.close();
@@ -309,7 +303,7 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
 
       return {
         ...formatPurchase(result.records[0].get('p').properties),
-        category: formatCategory(result.records[0].get('c').properties)
+        categoryId: result.records[0].get('c').properties.id
       };
     } finally {
       await session.close();
@@ -400,7 +394,7 @@ async function getPurchaseStats({
       MATCH (p)-[:BELONGS_TO]->(c:Category)
       WHERE 1=1 ${whereClause}
       RETURN 
-        c,
+        c.id AS categoryId,
         sum(p.price) AS categoryTotal,
         count(p) AS categoryCount
       ORDER BY categoryTotal DESC
@@ -409,8 +403,6 @@ async function getPurchaseStats({
     const statsByCategoryResult = await session.executeRead(tx => tx.run(statsByCategoryQuery, params));
 
     const categoriesStats = statsByCategoryResult.records.map(record => {
-      const categoryNode = record.get('c').properties;
-
       const rawCategoryTotal = record.get('categoryTotal');
       const categoryTotal =
         typeof rawCategoryTotal === 'number'
@@ -428,7 +420,7 @@ async function getPurchaseStats({
             : 0;
 
       return {
-        category: formatCategory(categoryNode),
+        categoryId: record.get('categoryId'),
         totalAmount: categoryTotal,
         count: categoryCount
       };

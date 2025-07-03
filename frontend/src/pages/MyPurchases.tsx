@@ -37,28 +37,11 @@ export default function MyPurchases() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [purchasesResponse, categoriesResponse] = await Promise.all([
-          api.get("purchases"),
-          api.get("categories"),
-        ]);
-
-        const purchasesData = await purchasesResponse.json() as Purchase[];
-        const categoriesData = await categoriesResponse.json() as Category[];
+        const purchasesResponse = await api.get("purchases");
+        const purchasesData = await purchasesResponse.json() as PurchaseWithCategory[];
 
         console.log("Purchases data:", purchasesData);
-        console.log("Categories data:", categoriesData);
-
-        const purchasesWithCategories = purchasesData.map((purchase: Purchase) => {
-          const categoryId = purchase.category?.id || purchase.categoryId;
-          const matchedCategory = categoriesData.find((cat: Category) => cat.id === categoryId);
-          console.log(`Purchase ${purchase.id}: categoryId=${categoryId}, matched:`, matchedCategory);
-          return {
-            ...purchase,
-            category: matchedCategory,
-          };
-        });
-
-        setPurchases(purchasesWithCategories);
+        setPurchases(purchasesData);
       } catch (error) {
         console.error("Erreur lors du chargement des données:", error);
       } finally {
