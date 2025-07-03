@@ -14,6 +14,8 @@ import { CategorySelect } from "@/components/CategorySelect";
 import { api } from "@/lib/api";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useNavigate } from "react-router";
 
 // Schéma de validation Zod
 const purchaseSchema = z.object({
@@ -32,6 +34,7 @@ type PurchaseFormData = z.infer<typeof purchaseSchema>;
 
 function NewPurchase() {
   const [apiError, setApiError] = useState("");
+  const navigate = useNavigate();
 
   const {
     register,
@@ -67,10 +70,14 @@ function NewPurchase() {
 
       await api.post("purchases", { json: purchaseData });
 
+      toast.success("Achat ajouté avec succès !");
       reset();
+      navigate("/purchases");
     } catch (error) {
       console.error("Erreur API :", error);
-      setApiError("Une erreur est survenue lors de l'ajout de la dépense.");
+      const errorMessage = "Une erreur est survenue lors de l'ajout de la dépense.";
+      setApiError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

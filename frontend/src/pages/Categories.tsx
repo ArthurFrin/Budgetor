@@ -5,6 +5,7 @@ import { Pencil, Trash2, Plus } from "lucide-react";
 import { useCategories } from "@/hooks/use-categories";
 import { CategoryForm } from "@/components/CategoryForm";
 import type { Category } from "@/types";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogTrigger,
@@ -37,6 +38,7 @@ function Categories() {
   const handleCreateSuccess = (newCategory: Category) => {
     addCategory(newCategory);
     setShowCreateDialog(false);
+    toast.success(`Catégorie "${newCategory.name}" créée avec succès !`);
     // Notifier les autres composants que les catégories ont été mises à jour
     window.dispatchEvent(new CustomEvent('categoryUpdated'));
   };
@@ -45,6 +47,7 @@ function Categories() {
     updateCategory(updatedCategory);
     setShowEditDialog(false);
     setEditingCategory(null);
+    toast.success(`Catégorie "${updatedCategory.name}" modifiée avec succès !`);
     // Notifier les autres composants que les catégories ont été mises à jour
     window.dispatchEvent(new CustomEvent('categoryUpdated'));
   };
@@ -55,12 +58,14 @@ function Categories() {
     setDeleting(true);
     try {
       await deleteCategory(selectedCategory.id);
+      toast.success(`Catégorie "${selectedCategory.name}" supprimée avec succès !`);
       setSelectedCategory(null);
       setShowDeleteDialog(false);
       // Notifier les autres composants que les catégories ont été mises à jour
       window.dispatchEvent(new CustomEvent('categoryUpdated'));
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
+      toast.error("Erreur lors de la suppression de la catégorie");
     } finally {
       setDeleting(false);
     }
