@@ -5,6 +5,7 @@ import categoryRoutes from "./routes/category.routes";
 import purchaseRoutes from "./routes/purchase.routes";
 import jwtPlugin from "./plugin/jwt";
 import neo4jPlugin from "./plugin/neo4j";
+import redisPlugin from "./plugin/redis";
 import fastifyCookie from "@fastify/cookie";
 import fastifyFormbody from "@fastify/formbody";
 import cors from '@fastify/cors';
@@ -28,6 +29,11 @@ app.register(neo4jPlugin, {
   uri: process.env.NEO4J_URI || 'neo4j://localhost:7687',
   username: process.env.NEO4J_USER || 'neo4j',
   password: process.env.NEO4J_PASSWORD || 'passw0rd'
+});
+app.register(redisPlugin, {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379'),
+  password: process.env.REDIS_PASSWORD
 });
 
 

@@ -40,14 +40,29 @@ function Login() {
     console.log("Tentative de connexion avec", data);
 
     try {
-      const success = await login(data);
-      if (success) {
+      const result = await login(data);
+      if (result.success) {
         console.log("Connexion réussie !");
         navigate("/");
       } else {
-        setError("Identifiants invalides");
+        // Gestion des différents types d'erreurs
+        switch (result.error) {
+          case "rate_limit": {
+            const minutes = Math.ceil((result.retryAfter || 60) / 60);
+            setError(`Trop de tentatives de connexion. Veuillez réessayer dans ${minutes} minute${minutes > 1 ? 's' : ''}.`);
+            break;
+          }
+          case "invalid_credentials":
+            setError("Email ou mot de passe incorrect");
+            break;
+          case "network_error":
+            setError("Erreur de connexion au serveur");
+            break;
+          default:
+            setError("Erreur de connexion");
+        }
       }
-    } catch (err) {
+    } catch {
       setError("Erreur de connexion");
     } finally {
       setIsLoading(false);

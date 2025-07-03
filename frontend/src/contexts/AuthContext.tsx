@@ -1,11 +1,11 @@
 import { createContext, useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
-import type { User, LoginData, RegisterData, AuthContextType } from "@/types";
+import type { User, LoginData, RegisterData, AuthContextType, LoginResult } from "@/types";
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
-  login: async () => false,
+  login: async () => ({ success: false }),
   register: async () => false,
   logout: async () => {},
   checkMe: async () => {},
@@ -15,38 +15,52 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const login = async ({
-    email,
-    password,
-  }: {
-    email: string;
-    password: string;
-  }): Promise<boolean> => {
+  const login = async (data: LoginData): Promise<LoginResult> => {
     try {
       const response = await api.post("login", {
-        json: { email, password },
+        json: data,
       });
       const userData = await response.json<User>();
       setUser(userData);
-      return true; // Connexion réussie
-    } catch (error) {
+      return { success: true }; // Connexion réussie
+    } catch (error: unknown) {
       console.error("Erreur lors de la connexion:", error);
-      return false; // Connexion échouée
+      
+      // Gestion spécifique de l'erreur 429 (Too Many Requests)
+      if (error instanceof Error && 'response' in error) {
+        const httpError = error as { response: { status: number; json: () => Promise<{ reset?: number }> } };
+        if (httpError.response?.status === 429) {
+          try {
+            const errorData = await httpError.response.json();
+            const retryAfter = errorData.reset ? Math.ceil((errorData.reset - Date.now()) / 1000) : 60;
+            return { 
+              success: false, 
+              error: "rate_limit", 
+              retryAfter 
+            };
+          } catch {
+            return { 
+              success: false, 
+              error: "rate_limit", 
+              retryAfter: 60 
+            };
+          }
+        }
+        
+        // Autres erreurs
+        if (httpError.response?.status === 401) {
+          return { success: false, error: "invalid_credentials" };
+        }
+      }
+      
+      return { success: false, error: "network_error" };
     }
   };
 
-  const register = async ({
-    email,
-    password,
-    name,
-  }: {
-    email: string;
-    password: string;
-    name?: string;
-  }): Promise<boolean> => {
+  const register = async (data: RegisterData): Promise<boolean> => {
     try {
       const response = await api.post("register", {
-        json: { email, password, name },
+        json: data,
       });
       const userData = await response.json<User>();
       setUser(userData);

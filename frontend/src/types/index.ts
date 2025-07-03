@@ -2,17 +2,23 @@
 import type { User, LoginData, RegisterData } from './user';
 
 // Interface pour les contextes d'authentification
+export interface LoginResult {
+  success: boolean;
+  error?: string;
+  retryAfter?: number;
+}
+
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (data: LoginData) => Promise<boolean>;
+  login: (data: LoginData) => Promise<LoginResult>;
   register: (data: RegisterData) => Promise<boolean>;
   logout: () => Promise<void>;
   checkMe: () => Promise<void>;
 }
 
 // Interface pour les réponses API communes
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data?: T;
   error?: string;
   message?: string;

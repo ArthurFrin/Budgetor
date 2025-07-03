@@ -1,9 +1,19 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { RedisHelper } from '../plugin/redis';
 
 export async function getCategories(request: FastifyRequest, reply: FastifyReply) {
   try {
     await request.jwtVerify();
     const user = request.user as { id: string; email: string };
+    
+    const cacheKey = `categories:${user.id}`;
+    
+    // recup le cache si possible
+    const cachedCategories = await RedisHelper.getCache(request.server.redis, cacheKey);
+    if (cachedCategories) {
+      request.server.log.info('Categories retrieved from cache');
+      return reply.send(cachedCategories);
+    }
     
     const categories = await request.server.prisma.category.findMany({
       where: {
@@ -13,6 +23,10 @@ export async function getCategories(request: FastifyRequest, reply: FastifyReply
         name: 'asc'
       }
     });
+    
+    // 5 min cache
+    await RedisHelper.setCache(request.server.redis, cacheKey, categories, 300);
+    
     return reply.send(categories);
   } catch (error) {
     return reply.code(500).send({ error: "Erreur lors de la récupération des catégories." });
@@ -43,6 +57,9 @@ export async function createCategory(request: FastifyRequest, reply: FastifyRepl
       },
     });
 
+    // Invalider le cache si nouvelle catégorie
+    await RedisHelper.deleteCache(request.server.redis, `categories:${user.id}`);
+
     return reply.code(201).send(category);
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -67,7 +84,7 @@ export async function updateCategory(request: FastifyRequest, reply: FastifyRepl
     const category = await request.server.prisma.category.update({
       where: { 
         id,
-        userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
+        userId: user.id
       },
       data: {
         ...(name && { name }),
@@ -75,6 +92,9 @@ export async function updateCategory(request: FastifyRequest, reply: FastifyRepl
         ...(color !== undefined && { color }),
       },
     });
+
+    // Invalider le cache des catégories de l'utilisateur
+    await RedisHelper.deleteCache(request.server.redis, `categories:${user.id}`);
 
     return reply.send(category);
   } catch (error: any) {
@@ -125,6 +145,9 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
         userId: user.id // S'assurer que la catégorie appartient à l'utilisateur
       },
     });
+
+    // Invalidar le cache des catégories de l'utilisateur
+    await RedisHelper.deleteCache(request.server.redis, `categories:${user.id}`);
 
     return reply.send({ message: "Catégorie supprimée avec succès." });
   } catch (error: any) {
