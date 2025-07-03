@@ -73,7 +73,7 @@ export default function MainLayout() {
           {user && (
             <div className="space-y-3">
               <div className="flex flex-col gap-1">
-                <div className="text-xs text-muted-foreground uppercase tracking-wide">
+                <div className="text-xs text-muted-foreground tracking-wide">
                   Connecté en tant que
                 </div>
                 <div className="font-medium text-sm text-foreground truncate">
