@@ -9,6 +9,8 @@ import redisPlugin from "./plugin/redis";
 import fastifyCookie from "@fastify/cookie";
 import fastifyFormbody from "@fastify/formbody";
 import cors from '@fastify/cors';
+import assistantRoutes from "./routes/assistant.routes";
+import chromaPlugin from "./plugin/chromadb";
 
 const app = Fastify({ logger: true });
 
@@ -35,7 +37,9 @@ app.register(redisPlugin, {
   port: parseInt(process.env.REDIS_PORT || '6379'),
   password: process.env.REDIS_PASSWORD
 });
+app.register(chromaPlugin);
 
+app.register(assistantRoutes, { prefix: "/api" });
 
 app.register(userRoutes, { prefix: "/api" });
 app.register(categoryRoutes, { prefix: "/api" });

@@ -400,7 +400,7 @@ async function getPurchaseStats({
     const params: any = { userId };
 
     if (startDate) {
-      whereClause += ' AND p.date >= datetime($startDate)';
+      whereClause += ' p.date >= datetime($startDate)';
       params.startDate = new Date(startDate).toISOString();
     }
 
@@ -412,7 +412,7 @@ async function getPurchaseStats({
     // Totaux globaux
     const totalsQuery = `
       MATCH (p:Purchase)-[:MADE_BY]->(u:User {id: $userId})
-      WHERE 1=1 ${whereClause}
+      WHERE ${whereClause}
       RETURN 
         sum(p.price) AS totalAmount,
         count(p) AS totalCount
@@ -440,7 +440,7 @@ async function getPurchaseStats({
     // Statistiques par catégorie
     const statsByCategoryQuery = `
       MATCH (p:Purchase)-[:MADE_BY]->(u:User {id: $userId})
-      WHERE 1=1 ${whereClause}
+      WHERE ${whereClause}
       OPTIONAL MATCH (p)-[:BELONGS_TO]->(c:Category)
       WITH p, c
       WITH c.id AS categoryId, sum(p.price) AS categoryTotal, count(p) AS categoryCount
