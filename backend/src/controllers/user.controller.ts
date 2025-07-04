@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { sendMail, generatePasswordResetEmail } from '../utils/mailer';
 
 export async function getUsers(request: FastifyRequest, reply: FastifyReply) {
   const users = await request.server.prisma.user.findMany({
@@ -121,5 +123,121 @@ export async function getCurrentUser(request: FastifyRequest, reply: FastifyRepl
     return reply.send(user);
   } catch (err) {
     return reply.code(401).send({ error: "Non authentifié." });
+  }
+}
+
+export async function forgetPassword(request: FastifyRequest, reply: FastifyReply) {
+  const { email } = request.body as { email: string };
+
+  if (!email) {
+    return reply.code(400).send({ error: "L'email est obligatoire." });
+  }
+
+  // Vérifier si l'utilisateur existe
+  const user = await request.server.prisma.user.findUnique({
+    where: { email }
+  });
+
+  // Pour des raisons de sécurité, toujours renvoyer une réponse positive
+  // même si l'utilisateur n'existe pas
+  if (!user) {
+    return reply.send({ 
+      message: "Si un compte existe avec cet email, un lien de réinitialisation sera envoyé."
+    });
+  }
+
+  // Générer un JWT token pour la réinitialisation avec une expiration d'une heure
+  const resetToken = await reply.jwtSign(
+    { 
+      id: user.id, 
+      email: user.email,
+      purpose: 'password-reset'
+    },
+    { 
+      expiresIn: '1h' 
+    }
+  );
+
+  // Générer et envoyer l'email
+  try {
+    const emailContent = generatePasswordResetEmail(email, resetToken);
+    await sendMail({
+      to: email,
+      subject: emailContent.subject,
+      html: emailContent.html,
+      text: emailContent.text
+    });
+
+    return reply.send({ 
+      message: "Si un compte existe avec cet email, un lien de réinitialisation sera envoyé." 
+    });
+  } catch (error) {
+    console.error('Error sending password reset email:', error);
+    return reply.code(500).send({ 
+      error: "Une erreur est survenue lors de l'envoi de l'email."
+    });
+  }
+}
+
+export async function resetPassword(request: FastifyRequest, reply: FastifyReply) {
+  const { token, newPassword } = request.body as { 
+    token: string;
+    newPassword: string;
+  };
+
+  if (!token || !newPassword) {
+    return reply.code(400).send({ 
+      error: "Le token et le nouveau mot de passe sont obligatoires." 
+    });
+  }
+
+  try {
+    // Vérifier le JWT token
+    const payload = await request.server.jwt.verify(token) as { 
+      id: string; 
+      email: string;
+      purpose: string;
+    };
+    
+    // Vérifier si c'est bien un token de réinitialisation de mot de passe
+    if (payload.purpose !== 'password-reset') {
+      return reply.code(400).send({ 
+        error: "Ce lien de réinitialisation est invalide." 
+      });
+    }
+    
+    // Vérifier si l'utilisateur existe
+    const user = await request.server.prisma.user.findUnique({
+      where: { 
+        id: payload.id,
+        email: payload.email
+      }
+    });
+
+    if (!user) {
+      return reply.code(400).send({ 
+        error: "Ce lien de réinitialisation est invalide ou a expiré." 
+      });
+    }
+
+    // Hacher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Mettre à jour le mot de passe
+    await request.server.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword
+      }
+    });
+
+    return reply.send({ 
+      message: "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe." 
+    });
+  } catch (error) {
+    // Si le token est expiré ou invalide, JWT va lancer une erreur
+    return reply.code(400).send({ 
+      error: "Ce lien de réinitialisation est invalide ou a expiré." 
+    });
   }
 }

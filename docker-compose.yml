@@ -20,6 +20,19 @@ services:
       - redis-data:/data
     command: redis-server --appendonly yes
 
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog-budget
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - app-network
+
 volumes:
   neo4j-data:
   redis-data:
+
+networks:
+  app-network:
+    driver: bridge

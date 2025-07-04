@@ -29,3 +29,12 @@ export interface RegisterRequest {
   name?: string;
   password: string;
 }
+
+export interface ForgetPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}

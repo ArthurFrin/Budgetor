@@ -5,6 +5,8 @@ import {
   loginUser,
   logoutUser,
   getCurrentUser,
+  forgetPassword,
+  resetPassword,
 } from "../controllers/user.controller";
 import { redisRateLimiter } from "../middleware/rateLimit";
 
@@ -25,4 +27,6 @@ export default async function userRoutes(app: FastifyInstance) {
   app.post("/login", { preHandler: [authRateLimit] }, loginUser);
   app.post("/logout", logoutUser);
   app.get("/me", getCurrentUser);
+  app.post("/forget-password", { preHandler: [authRateLimit] }, forgetPassword);
+  app.post("/reset-password", { preHandler: [authRateLimit] }, resetPassword);
 }

@@ -121,7 +121,12 @@ function Login() {
               {isLoading ? "Connexion..." : "Se connecter"}
             </Button>
           </form>
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
+            <p className="text-sm text-gray-600">
+              <Link to="/forget-password" className="font-medium text-blue-600 hover:text-blue-500">
+                Mot de passe oublié ?
+              </Link>
+            </p>
             <p className="text-sm text-gray-600">
               Pas encore de compte ?{" "}
               <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">

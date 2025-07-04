@@ -3,6 +3,8 @@ import Home from "@/pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgetPassword from "./pages/ForgetPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { AuthContext, AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./components/MainLayout";
 import { useContext, useEffect } from "react";
@@ -40,10 +42,11 @@ function App() {
           {/* autres routes protégées */}
         </Route>
 
-        {/* Login sans sidebar */}
+        {/* Routes d'authentification sans sidebar */}
         <Route path="/login" element={<Login />} />
-        {/* Register sans sidebar */}
         <Route path="/register" element={<Register />} />
+        <Route path="/forget-password" element={<ForgetPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
       </Routes>
     </AuthProvider>
   );
