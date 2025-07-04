@@ -12,7 +12,7 @@ export const assistantController = (fastify: FastifyInstance) => async (
   const { userId, question } = request.body;
 
   // Récupérer les collections ChromaDB
-  const { userInfo, tips } = await fastify.getBudgetCollections();
+  const { userInfo, tips, purchases } = await fastify.getBudgetCollections();
 
   const userData = await userInfo.query({
     queryTexts: [question],
@@ -24,9 +24,17 @@ export const assistantController = (fastify: FastifyInstance) => async (
     queryTexts: [question],
     nResults: 3,
   });
+  
+  // Récupérer les données d'achat pertinentes de l'utilisateur
+  const purchasesData = await purchases.query({
+    queryTexts: [question],
+    nResults: 5,
+    where: { user_id: userId },
+  });
 
   const contextUser = userData.documents.flat().join("\n");
   const contextTips = tipsData.documents.flat().join("\n");
+  const contextPurchases = purchasesData.documents.flat().join("\n");
 
   // Historique Redis
   const historyRaw = await fastify.redis.lRange(`chat:session:${userId}`, -6, -1);
@@ -43,6 +51,9 @@ ${historyContext}
 
 Informations utilisateur :
 ${contextUser}
+
+Historique des achats de l'utilisateur :
+${contextPurchases}
 
 Conseils généraux :
 ${contextTips}

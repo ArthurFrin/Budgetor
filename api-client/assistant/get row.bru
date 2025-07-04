@@ -1,0 +1,19 @@
+meta {
+  name: get row
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/assistant
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "userId": "686410ccb157fa622f04ae8e",
+    "question": "comment gerer mon budget ?"
+    
+  }
+}

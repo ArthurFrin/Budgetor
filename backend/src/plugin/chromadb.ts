@@ -9,6 +9,7 @@ declare module "fastify" {
     getBudgetCollections: () => Promise<{
       userInfo: Collection;
       tips: Collection;
+      purchases: Collection;
     }>;
   }
 }
@@ -31,7 +32,10 @@ export default fp(async (fastify: FastifyInstance) => {
       const tips = await chroma.getOrCreateCollection({
         name: "budget_tips",
       });
-      return { userInfo, tips };
+      const purchases = await chroma.getOrCreateCollection({
+        name: "budget_purchases",
+      });
+      return { userInfo, tips, purchases };
     }
   );
 });

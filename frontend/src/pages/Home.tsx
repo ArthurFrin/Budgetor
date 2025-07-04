@@ -2,6 +2,7 @@ import * as React from "react";
 import { useStats, type TimePeriod } from "@/hooks/use-stats";
 import { ChartPieDonutText } from "@/components/ChartPieDonutText";
 import { ChartBarStacked } from "@/components/ChartBarStacked";
+import { ChatAssistant } from "@/components/ChatAssistant";
 
 function Home() {
   // État pour la catégorie sélectionnée
@@ -120,6 +121,10 @@ function Home() {
       ) : (
         <p>Aucune donnée disponible.</p>
       )}
+            
+            
+            <ChatAssistant />
+
     </div>
   );
 }

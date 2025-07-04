@@ -127,12 +127,56 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
     // Invalider les caches de statistiques pour cet utilisateur
     await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
     await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
-
+    
     // Ajouter les détails de la catégorie
     const purchaseWithCategory = {
       ...purchase,
       category: categoryObj
     };
+    
+    // Ajouter l'achat à ChromaDB pour l'assistant
+    try {
+      const { purchases } = await request.server.getBudgetCollections();
+      
+      console.log(`Vérification si l'achat existe déjà dans ChromaDB avec ID: ${purchase.id}`);
+      
+      // Vérifier si l'entrée existe déjà dans ChromaDB (pour éviter les doublons)
+      try {
+        await purchases.get({
+          ids: [purchase.id]
+        });
+        
+        // Si on arrive ici, cela signifie que l'ID existe déjà
+        console.log(`Achat avec ID ${purchase.id} déjà présent dans ChromaDB, suppression avant insertion`);
+        
+        await purchases.delete({
+          ids: [purchase.id]
+        });
+      } catch (error) {
+        // L'ID n'existe pas, ce qui est normal pour une création
+        console.log(`Achat avec ID ${purchase.id} n'existe pas encore dans ChromaDB, création normale`);
+      }
+      
+      // Formater les données pour ChromaDB
+      const purchaseDoc = `Achat effectué le ${new Date(date).toLocaleDateString('fr-FR')} : ${description || 'Sans description'} - Montant: ${price}€ - Catégorie: ${categoryObj?.name || 'Non catégorisé'}${tags?.length ? ` - Tags: ${tags.join(', ')}` : ''}`;
+      
+      await purchases.add({
+        ids: [purchase.id],
+        metadatas: [{ 
+          user_id: user.id,
+          price: price,
+          date: date,
+          category: categoryObj?.name || 'Non catégorisé',
+          category_id: categoryObj?.id || 'other'
+        }],
+        documents: [purchaseDoc]
+      });
+      
+      console.log(`Achat ajouté à ChromaDB avec succès. ID: ${purchase.id}`);
+    } catch (chromaError) {
+      console.error('Erreur lors de l\'ajout de l\'achat à ChromaDB:', chromaError);
+      // On continue malgré l'erreur de ChromaDB car l'achat est déjà enregistré dans Neo4j
+    }
 
     return reply.code(201).send(purchaseWithCategory);
   } catch (error) {
@@ -196,6 +240,47 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
         where: { id: purchase.categoryId }
       });
     }
+    
+    // Mettre à jour l'entrée dans ChromaDB
+    try {
+      const { purchases } = await request.server.getBudgetCollections();
+      
+      console.log(`Mise à jour dans ChromaDB: Suppression de l'achat avec ID: ${id}`);
+      
+      // Supprimer l'ancienne entrée
+      try {
+        await purchases.delete({
+          ids: [id]
+        });
+        console.log(`Ancien achat avec ID ${id} supprimé de ChromaDB`);
+      } catch (deleteError) {
+        console.log(`Pas d'ancien achat avec ID ${id} trouvé dans ChromaDB, ou erreur lors de la suppression:`, deleteError);
+      }
+      
+      // Ajouter la nouvelle version
+      const categoryObj = category || (purchase.categoryId ? 
+        { id: purchase.categoryId, name: 'Inconnu', color: '#cccccc' } : 
+        { id: 'other', name: 'Autre', color: '#cccccc' });
+      
+      const purchaseDoc = `Achat effectué le ${new Date(purchase.date).toLocaleDateString('fr-FR')} : ${purchase.description || 'Sans description'} - Montant: ${purchase.price}€ - Catégorie: ${categoryObj?.name || 'Non catégorisé'}${purchase.tags?.length ? ` - Tags: ${purchase.tags.join(', ')}` : ''}`;
+      
+      await purchases.add({
+        ids: [purchase.id],
+        metadatas: [{ 
+          user_id: user.id,
+          price: purchase.price,
+          date: purchase.date,
+          category: categoryObj?.name || 'Non catégorisé',
+          category_id: categoryObj?.id || 'other'
+        }],
+        documents: [purchaseDoc]
+      });
+      
+      console.log(`Nouvelle version de l'achat ajoutée à ChromaDB avec succès. ID: ${purchase.id}`);
+    } catch (chromaError) {
+      console.error('Erreur lors de la mise à jour de l\'achat dans ChromaDB:', chromaError);
+      // On continue malgré l'erreur de ChromaDB car l'achat est déjà mis à jour dans Neo4j
+    }
 
     // Si pas de catégorie ou catégorie non trouvée, afficher comme "Autre"
     const purchaseWithCategory = {
@@ -228,6 +313,25 @@ export async function deletePurchase(request: FastifyRequest, reply: FastifyRepl
     // Invalider les caches de statistiques pour cet utilisateur
     await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
     await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
+    
+    // Supprimer l'entrée correspondante dans ChromaDB
+    try {
+      const { purchases } = await request.server.getBudgetCollections();
+      
+      console.log(`Suppression de l'achat avec ID: ${id} de ChromaDB`);
+      
+      try {
+        await purchases.delete({
+          ids: [id]
+        });
+        console.log(`Achat avec ID ${id} supprimé avec succès de ChromaDB`);
+      } catch (deleteError) {
+        console.log(`Pas d'achat avec ID ${id} trouvé dans ChromaDB, ou erreur lors de la suppression:`, deleteError);
+      }
+    } catch (chromaError) {
+      console.error('Erreur lors de la suppression de l\'achat dans ChromaDB:', chromaError);
+      // On continue malgré l'erreur de ChromaDB car l'achat est déjà supprimé de Neo4j
+    }
 
     return reply.send({ message: "Achat supprimé avec succès." });
   } catch (error) {
