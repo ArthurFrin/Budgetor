@@ -26,7 +26,7 @@ const purchaseSchema = z.object({
     required_error: "La date est requise",
     invalid_type_error: "Format de date invalide",
   }),
-  category: z.string().nonempty("La catégorie est requise"),
+  category: z.string(), // Accepte n'importe quelle chaîne, y compris "null"
   tags: z.string().optional(),
 });
 
@@ -47,7 +47,7 @@ function NewPurchase() {
     defaultValues: {
       description: "",
       tags: "",
-      category: "",
+      category: "null", // "Autre" est la catégorie par défaut
       date: new Date(),
     },
   });
@@ -64,7 +64,7 @@ function NewPurchase() {
         price: data.price,
         description: data.description || "",
         date: data.date.toISOString(),
-        categoryId: data.category, // Assurez-vous que c'est l'ID
+        categoryId: data.category === "null" ? null : data.category, // Gère l'option "Autre"
         tags: tagsArray,
       };
 
@@ -72,7 +72,6 @@ function NewPurchase() {
 
       toast.success("Achat ajouté avec succès !");
       reset();
-      navigate("/purchases");
     } catch (error) {
       console.error("Erreur API :", error);
       const errorMessage = "Une erreur est survenue lors de l'ajout de la dépense.";
@@ -142,7 +141,6 @@ function NewPurchase() {
                         mode="single"
                         selected={field.value}
                         onSelect={field.onChange}
-                        initialFocus
                       />
                     </PopoverContent>
                   </Popover>

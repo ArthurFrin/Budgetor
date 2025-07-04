@@ -48,6 +48,11 @@ export function CategorySelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
+        {/* Option "Autre" toujours disponible */}
+        <SelectItem value="null" className="font-medium">
+          Autre
+        </SelectItem>
+        
         {categories.length === 0 ? (
           <SelectItem value="" disabled>
             Aucune catégorie disponible

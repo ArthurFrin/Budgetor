@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, Plus } from "lucide-react";
+import { Pencil, Trash2, Plus, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useCategories } from "@/hooks/use-categories";
 import { CategoryForm } from "@/components/CategoryForm";
 import type { Category } from "@/types";
@@ -21,6 +22,7 @@ function Categories() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -75,6 +77,15 @@ function Categories() {
     setSelectedCategory(null);
     setShowDeleteDialog(false);
   };
+  
+  // Filtrer les catégories en fonction de la recherche
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) return categories;
+    
+    return categories.filter(category => 
+      category.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [categories, searchQuery]);
 
   if (loading) {
     return <div>Chargement des catégories...</div>;
@@ -109,11 +120,22 @@ function Categories() {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {/* Barre de recherche */}
+      <div className="flex items-center gap-2 mb-4">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Rechercher des catégories..."
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className="max-w-sm"
+        />
+      </div>
       <div className="grid gap-4">
-        {categories.length === 0 ? (
+        {filteredCategories.length === 0 ? (
           <p className="text-gray-500">Aucune catégorie trouvée.</p>
         ) : (
-          categories.map((category) => (
+          filteredCategories.map((category) => (
             <div
               key={category.id}
               className="p-4 border rounded-lg flex justify-between items-center"

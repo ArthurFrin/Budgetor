@@ -115,10 +115,11 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
     
     const { id } = request.params as { id: string };
 
-    // Vérifier s'il y a des achats liés à cette catégorie dans Neo4j
+    // Récupérer les achats liés à cette catégorie dans Neo4j
     const session = request.server.neo4j.getSession();
     try {
-      const result = await session.executeRead((tx: any) => 
+      // Récupérer le nombre d'achats concernés
+      const countResult = await session.executeRead((tx: any) => 
         tx.run(
           `
           MATCH (p:Purchase)-[:BELONGS_TO]->(c:Category {id: $categoryId})
@@ -128,12 +129,21 @@ export async function deleteCategory(request: FastifyRequest, reply: FastifyRepl
         )
       );
       
-      const purchasesCount = result.records[0].get('purchaseCount').toNumber();
+      const purchasesCount = countResult.records[0].get('purchaseCount').toNumber();
       
+      // S'il y a des achats, on supprime les relations avec cette catégorie
       if (purchasesCount > 0) {
-        return reply.code(409).send({ 
-          error: "Impossible de supprimer cette catégorie car elle contient des achats." 
-        });
+        await session.executeWrite((tx: any) =>
+          tx.run(
+            `
+            MATCH (p:Purchase)-[r:BELONGS_TO]->(c:Category {id: $categoryId})
+            DELETE r
+            `,
+            { categoryId: id }
+          )
+        );
+        
+        request.server.log.info(`${purchasesCount} achats ont été détachés de la catégorie ${id}`);
       }
     } finally {
       await session.close();

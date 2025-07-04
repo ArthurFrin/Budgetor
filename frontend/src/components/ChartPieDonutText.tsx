@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp } from "lucide-react";
 import { Pie, PieChart } from "recharts";
 
 import {
@@ -19,19 +18,24 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 
-import { type StatsWithCategories } from "@/hooks/use-stats";
+import { type StatsWithCategories, type TimePeriod } from "@/hooks/use-stats";
+import { DateRangePicker } from "./DateRangePicker";
+
+interface ChartPieDonutTextProps {
+  categoriesStats: StatsWithCategories["categoriesStats"];
+  onPeriodChange?: (period: TimePeriod) => void;
+}
 
 export function ChartPieDonutText({
   categoriesStats,
-}: {
-  categoriesStats: StatsWithCategories["categoriesStats"];
-}) {
+  onPeriodChange,
+}: ChartPieDonutTextProps) {
   const chartData = React.useMemo(
     () =>
       categoriesStats.map((c) => ({
-        category: c.category.name,
+        category: c.category?.name || "Autre",
         amount: c.totalAmount,
-        fill: c.category.color || "var(--chart-1)",
+        fill: c.category?.color || "#cccccc",
       })),
     [categoriesStats]
   );
@@ -44,12 +48,27 @@ export function ChartPieDonutText({
     },
   } satisfies ChartConfig;
 
+  const handleDateRangeChange = (dateRange: { startDate: Date; endDate: Date }) => {
+    console.log("DateRangePicker a sélectionné une nouvelle période:", {
+      startDate: dateRange.startDate,
+      endDate: dateRange.endDate
+    });
+    
+    if (onPeriodChange) {
+      onPeriodChange({
+        start: dateRange.startDate.toISOString(),
+        end: dateRange.endDate.toISOString(),
+      });
+    }
+  };
+
   return (
     <Card className="flex flex-col w-xl">
-      
       <CardHeader className="items-center pb-0">
         <CardTitle>Dépenses par catégorie</CardTitle>
-        <CardDescription>Période sélectionnée</CardDescription>
+        <CardDescription className="w-full">
+          <DateRangePicker onDateRangeChange={handleDateRangeChange} />
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 relative">
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-lg font-bold w-28 h-28 flex items-center justify-center">
@@ -70,15 +89,11 @@ export function ChartPieDonutText({
               nameKey="category"
               innerRadius={60}
               strokeWidth={5}
-            >
-            </Pie>
+            ></Pie>
           </PieChart>
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
         <div className="text-muted-foreground leading-none">
           Répartition des dépenses par catégorie {totalAmount.toFixed(2)} €
         </div>

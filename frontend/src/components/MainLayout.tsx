@@ -10,7 +10,7 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Plus, Tag, LogOut, Receipt } from "lucide-react";
+import { LayoutGrid, Plus, Tag, LogOut, ReceiptEuro } from "lucide-react";
 import logo from "../assets/logo.webp"; // Assuming you have a logo.svg in your assets folder
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
@@ -60,7 +60,7 @@ export default function MainLayout() {
               <span>Ajouter une dépense</span>
             </Link>
             <Link to="/purchases" className={getLinkClasses("/purchases")}>
-              <Receipt className="h-5 w-5" />
+              <ReceiptEuro className="h-5 w-5" />
               <span>Mes dépenses</span>
             </Link>
             <Link to="/categories" className={getLinkClasses("/categories")}>

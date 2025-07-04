@@ -23,20 +23,31 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset: offset ? parseInt(offset) : undefined
     });
 
-    // Récupérer les catégories depuis Prisma
-    const categoryIds = [...new Set(purchases.map(p => p.categoryId))];
-    const categories = await request.server.prisma.category.findMany({
-      where: {
-        id: { in: categoryIds }
-      }
-    });
+    // Récupérer les catégories depuis Prisma (filtrer les IDs non valides)
+    const validCategoryIds = [...new Set(purchases.map(p => p.categoryId))]
+      .filter(id => id !== 'other' && id !== null && id !== undefined);
+    
+    const categories = validCategoryIds.length > 0 ? 
+      await request.server.prisma.category.findMany({
+        where: {
+          id: { in: validCategoryIds }
+        }
+      }) : [];
 
     // Mapper les catégories aux achats
     const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
-    const purchasesWithCategories = purchases.map(purchase => ({
-      ...purchase,
-      category: categoryMap.get(purchase.categoryId) || null
-    }));
+    const purchasesWithCategories = purchases.map(purchase => {
+      if (!purchase.categoryId) {
+        return {
+          ...purchase,
+          category: { id: 'other', name: 'Autre', color: '#cccccc' }
+        };
+      }
+      return {
+        ...purchase,
+        category: categoryMap.get(purchase.categoryId) || { id: purchase.categoryId, name: 'Inconnu', color: '#cccccc' }
+      };
+    });
 
     return reply.send(purchasesWithCategories);
   } catch (error) {
@@ -79,27 +90,28 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       });
     }
     
-    if (!categoryId) {
-      return reply.code(400).send({ 
-        error: "La catégorie est obligatoire.",
-        reçu: { categoryId: body.categoryId, category: body.category }
-      });
-    }
+    // La catégorie est optionnelle, on continue même si categoryId est null
 
     if (price <= 0) {
       return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
     }
 
-    // Vérifier que la catégorie existe (toujours via Prisma)
-    const categoryObj = await request.server.prisma.category.findUnique({
-      where: { id: categoryId }
-    });
-
-    if (!categoryObj) {
-      return reply.code(404).send({ 
-        error: "Catégorie non trouvée.", 
-        categoryId: categoryId
+    // Vérifier que la catégorie existe (toujours via Prisma) si une catégorie est fournie
+    let categoryObj = null;
+    if (categoryId && categoryId !== 'other') {
+      categoryObj = await request.server.prisma.category.findUnique({
+        where: { id: categoryId }
       });
+
+      if (!categoryObj) {
+        return reply.code(404).send({ 
+          error: "Catégorie non trouvée.", 
+          categoryId: categoryId
+        });
+      }
+    } else if (categoryId === 'other') {
+      // Utiliser une catégorie par défaut "Autre" 
+      categoryObj = { id: 'other', name: 'Autre', color: '#cccccc' };
     }
 
     // Créer l'achat dans Neo4j
@@ -169,14 +181,20 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
-    // Récupérer les détails de la catégorie depuis Prisma
-    const category = await request.server.prisma.category.findUnique({
-      where: { id: purchase.categoryId }
-    });
+    // Récupérer les détails de la catégorie depuis Prisma si l'achat a une catégorie
+    let category = null;
+    if (purchase.categoryId) {
+      category = await request.server.prisma.category.findUnique({
+        where: { id: purchase.categoryId }
+      });
+    }
 
+    // Si pas de catégorie ou catégorie non trouvée, afficher comme "Autre"
     const purchaseWithCategory = {
       ...purchase,
-      category: category || null
+      category: category || (purchase.categoryId ? 
+        { id: purchase.categoryId, name: 'Inconnu', color: '#cccccc' } : 
+        { id: 'other', name: 'Autre', color: '#cccccc' })
     };
 
     return reply.send(purchaseWithCategory);
@@ -223,21 +241,34 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       endDate
     });
 
-    // Récupérer les catégories depuis Prisma
-    const categoryIds = stats.categoriesStats.map(stat => stat.categoryId);
-    const categories = await request.server.prisma.category.findMany({
-      where: {
-        id: { in: categoryIds }
-      }
-    });
+    // Récupérer les catégories depuis Prisma (filtrer "other" qui n'est pas un ObjectID valide)
+    const validCategoryIds = stats.categoriesStats
+      .map(stat => stat.categoryId)
+      .filter(id => id !== 'other' && id !== null && id !== undefined);
+    
+    const categories = validCategoryIds.length > 0 ? 
+      await request.server.prisma.category.findMany({
+        where: {
+          id: { in: validCategoryIds }
+        }
+      }) : [];
 
     // Mapper les catégories aux statistiques
     const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
-    const categoriesStats = stats.categoriesStats.map(stat => ({
-      category: categoryMap.get(stat.categoryId) || { id: stat.categoryId },
-      totalAmount: stat.totalAmount,
-      count: stat.count
-    }));
+    const categoriesStats = stats.categoriesStats.map(stat => {
+      if (stat.categoryId === 'other') {
+        return {
+          category: { id: 'other', name: 'Autre', color: '#cccccc' },
+          totalAmount: stat.totalAmount,
+          count: stat.count
+        };
+      }
+      return {
+        category: categoryMap.get(stat.categoryId) || { id: stat.categoryId, name: 'Inconnu', color: '#cccccc' },
+        totalAmount: stat.totalAmount,
+        count: stat.count
+      };
+    });
 
     const statsWithCategories = {
       totalAmount: stats.totalAmount,

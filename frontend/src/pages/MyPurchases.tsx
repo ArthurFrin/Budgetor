@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Calendar, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { useCategories } from "@/hooks/use-categories";
 import type { Purchase } from "@/types/purchase";
 import type { Category } from "@/types/category";
 
@@ -32,7 +33,9 @@ interface PurchaseWithCategory extends Purchase {
 export default function MyPurchases() {
   const [purchases, setPurchases] = useState<PurchaseWithCategory[]>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const { categories } = useCategories();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,9 +97,12 @@ export default function MyPurchases() {
         header: "Catégorie",
         cell: ({ row }) => {
           const category = row.getValue("category") as Category;
-          if (!category) {
-            return <Badge variant="outline">Sans catégorie</Badge>;
+          
+          // Vérifier si c'est un achat sans catégorie ou avec la catégorie "other"
+          if (!category || category === null || category === undefined || category.id === 'other') {
+            return <Badge variant="outline">Autre</Badge>;
           }
+          
           return (
             <Badge
               style={{
@@ -119,8 +125,26 @@ export default function MyPurchases() {
     []
   );
 
+  // Filtrer les achats par catégorie sélectionnée
+  const filteredData = useMemo(() => {
+    if (!selectedCategory) return purchases;
+    
+    return purchases.filter(purchase => {
+      // Pour les achats sans catégorie
+      if (selectedCategory === "null") {
+        // Vérifie si la catégorie est null, undefined, un objet vide, ou a l'id "other"
+        return !purchase.category || 
+               purchase.category === null || 
+               purchase.category === undefined || 
+               purchase.category?.id === 'other';
+      }
+      // Filtrage normal par catégorie
+      return purchase.category?.id === selectedCategory;
+    });
+  }, [purchases, selectedCategory]);
+
   const table = useReactTable({
-    data: purchases,
+    data: filteredData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -169,7 +193,20 @@ export default function MyPurchases() {
         <CardHeader>
           <CardTitle>Liste des dépenses</CardTitle>
           <CardDescription>
-            {purchases.length} dépense{purchases.length > 1 ? "s" : ""} au total
+            {filteredData.length} dépense{filteredData.length > 1 ? "s" : ""}
+            {selectedCategory && (
+              <>
+                {selectedCategory === "null" 
+                  ? " dans la catégorie \"Autre\" " 
+                  : ` dans la catégorie "${categories?.find(c => c.id === selectedCategory)?.name || ""}" `
+                }
+              </>
+            )}
+            {selectedCategory === "null" && (
+              <span className="text-xs text-muted-foreground">
+                (Achats sans catégorie: {purchases.filter(p => p.category === null || p.category === undefined).length})
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -182,6 +219,57 @@ export default function MyPurchases() {
               onChange={(event) => setGlobalFilter(String(event.target.value))}
               className="max-w-sm"
             />
+          </div>
+          
+          {/* Filtres par catégorie */}
+          <div className="mb-4">
+            <div className="mb-2">
+              <h3 className="text-sm font-medium text-muted-foreground">Filtrer par catégorie</h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categories?.map((category) => (
+                <button
+                  key={`filter-${category.id}`}
+                  onClick={() => {
+                    // Toggle: si déjà sélectionné, désélectionner, sinon sélectionner
+                    if (selectedCategory === category.id) {
+                      setSelectedCategory(null);
+                    } else {
+                      setSelectedCategory(category.id);
+                    }
+                  }}
+                  className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-gray-800 text-white'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                  }`}
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: category.color || '#3b82f6' }}
+                  />
+                  {category.name}
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  // Toggle: si déjà sélectionné, désélectionner, sinon sélectionner
+                  if (selectedCategory === "null") {
+                    setSelectedCategory(null);
+                  } else {
+                    setSelectedCategory("null");
+                  }
+                }}
+                className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 transition-colors ${
+                  selectedCategory === "null"
+                    ? 'bg-gray-800 text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-800'
+                }`}
+              >
+                <div className="w-2 h-2 rounded-full bg-gray-400" />
+                Autre
+              </button>
+            </div>
           </div>
 
           {/* Tableau */}

@@ -16,7 +16,7 @@ export interface PurchaseData {
   date: string | Date;
   tags?: string[];
   userId: string;
-  categoryId: string;
+  categoryId?: string;
 }
 
 // Déclaration Fastify
@@ -141,11 +141,20 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
     const session = getSession();
     try {
       await ensureUserExists(purchaseData.userId);
-      await ensureCategoryExists(purchaseData.categoryId);
+      
+      let query;
+      let params: any = {
+        userId: purchaseData.userId,
+        description: purchaseData.description || '',
+        price: purchaseData.price,
+        date: new Date(purchaseData.date).toISOString(),
+        tags: purchaseData.tags || []
+      };
 
-      const result = await session.executeWrite(tx =>
-        tx.run(
-          `
+      if (purchaseData.categoryId) {
+        await ensureCategoryExists(purchaseData.categoryId);
+        params.categoryId = purchaseData.categoryId;
+        query = `
           MATCH (u:User {id: $userId})
           MATCH (c:Category {id: $categoryId})
           CREATE (p:Purchase {
@@ -159,25 +168,39 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
           })
           CREATE (p)-[:MADE_BY]->(u)
           CREATE (p)-[:BELONGS_TO]->(c)
-          RETURN p, c
-          `,
-          {
-            userId: purchaseData.userId,
-            categoryId: purchaseData.categoryId,
-            description: purchaseData.description || '',
-            price: purchaseData.price,
-            date: new Date(purchaseData.date).toISOString(),
-            tags: purchaseData.tags || []
-          }
-        )
+          RETURN p, c.id AS categoryId
+        `;
+      } else {
+        // Création sans catégorie
+        query = `
+          MATCH (u:User {id: $userId})
+          CREATE (p:Purchase {
+            id: randomUUID(),
+            description: $description,
+            price: $price,
+            date: datetime($date),
+            tags: $tags,
+            createdAt: datetime(),
+            updatedAt: datetime()
+          })
+          CREATE (p)-[:MADE_BY]->(u)
+          RETURN p, null AS categoryId
+        `;
+      }
+
+      const result = await session.executeWrite(tx =>
+        tx.run(query, params)
       );
 
       const record = result.records[0];
       if (!record) throw new Error('Aucun enregistrement retourné');
 
+      const purchase = formatPurchase(record.get('p').properties);
+      const categoryId = record.get('categoryId');
+
       return {
-        ...formatPurchase(record.get('p').properties),
-        categoryId: record.get('c').properties.id
+        ...purchase,
+        categoryId: categoryId
       };
     } finally {
       await session.close();
@@ -203,25 +226,35 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
     try {
       await ensureUserExists(userId);
 
+      const params: any = { userId, limit: neo4j.int(limit), offset: neo4j.int(offset) };
       let query = `
         MATCH (p:Purchase)-[:MADE_BY]->(u:User {id: $userId})
-        MATCH (p)-[:BELONGS_TO]->(c:Category)
+        WHERE 1=1
       `;
-      const params: any = { userId, limit: neo4j.int(limit), offset: neo4j.int(offset) };
 
-      if (categoryId) {
-        query += ` WHERE c.id = $categoryId`;
-        params.categoryId = categoryId;
-      }
+      // Construire les conditions de date d'abord
       if (startDate) {
-        query += categoryId ? ' AND ' : ' WHERE ';
-        query += `p.date >= datetime($startDate)`;
+        query += ` AND p.date >= datetime($startDate)`;
         params.startDate = new Date(startDate).toISOString();
       }
       if (endDate) {
-        query += categoryId || startDate ? ' AND ' : ' WHERE ';
-        query += `p.date <= datetime($endDate)`;
+        query += ` AND p.date <= datetime($endDate)`;
         params.endDate = new Date(endDate).toISOString();
+      }
+
+      // Ensuite filtrer par catégorie si nécessaire
+      if (categoryId) {
+        query += `
+        WITH p
+        MATCH (p)-[:BELONGS_TO]->(c:Category)
+        WHERE c.id = $categoryId
+        `;
+        params.categoryId = categoryId;
+      } else {
+        query += `
+        WITH p
+        OPTIONAL MATCH (p)-[:BELONGS_TO]->(c:Category)
+        `;
       }
 
       query += `
@@ -233,10 +266,14 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
 
       const result = await session.executeRead(tx => tx.run(query, params));
 
-      return result.records.map(record => ({
-        ...formatPurchase(record.get('p').properties),
-        categoryId: record.get('c').properties.id
-      }));
+      return result.records.map(record => {
+        const purchase = formatPurchase(record.get('p').properties);
+        const category = record.get('c');
+        return {
+          ...purchase,
+          categoryId: category ? category.properties.id : null
+        };
+      });
     } finally {
       await session.close();
     }
@@ -391,12 +428,14 @@ async function getPurchaseStats({
     // Statistiques par catégorie
     const statsByCategoryQuery = `
       MATCH (p:Purchase)-[:MADE_BY]->(u:User {id: $userId})
-      MATCH (p)-[:BELONGS_TO]->(c:Category)
       WHERE 1=1 ${whereClause}
+      OPTIONAL MATCH (p)-[:BELONGS_TO]->(c:Category)
+      WITH p, c
+      WITH c.id AS categoryId, sum(p.price) AS categoryTotal, count(p) AS categoryCount
       RETURN 
-        c.id AS categoryId,
-        sum(p.price) AS categoryTotal,
-        count(p) AS categoryCount
+        CASE WHEN categoryId IS NULL THEN 'other' ELSE categoryId END AS categoryId,
+        categoryTotal,
+        categoryCount
       ORDER BY categoryTotal DESC
     `;
 

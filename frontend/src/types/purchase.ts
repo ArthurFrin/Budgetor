@@ -11,7 +11,7 @@ export interface Purchase {
   updatedAt: string;
   userId: string;
   user?: User;
-  categoryId: string;
+  categoryId?: string;
   category?: Category;
 }
 
@@ -20,7 +20,7 @@ export interface CreatePurchaseData {
   description?: string;
   date: string;
   tags?: string[];
-  categoryId: string;
+  categoryId?: string;
 }
 
 export interface UpdatePurchaseData {

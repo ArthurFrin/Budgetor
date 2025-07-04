@@ -16,20 +16,29 @@ export interface StatsWithCategories {
   }[];
 }
 
+export interface TimePeriod {
+  start: string; // ISO date string
+  end: string; // ISO date string
+}
+
 export function useStats() {
   const [stats, setStats] = useState<StatsWithCategories | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = async () => {
+  const fetchStats = async (timePeriod: TimePeriod) => {
     try {
       setLoading(true);
       setError(null);
       
-      const statsResponse = await api.get("purchases/stats");
+      const statsResponse = await api.get(`purchases/stats?startDate=${timePeriod.start}&endDate=${timePeriod.end}`);
       const statsData = await statsResponse.json<StatsWithCategories>();
       
-      console.log("Stats data with categories:", statsData);
+      console.log("Stats data with categories for period:", {
+        startDate: new Date(timePeriod.start).toLocaleString(),
+        endDate: new Date(timePeriod.end).toLocaleString(),
+        data: statsData
+      });
       setStats(statsData);
     } catch (err) {
       console.error("Error fetching stats:", err);
@@ -40,11 +49,17 @@ export function useStats() {
   };
 
   useEffect(() => {
-    fetchStats();
+    const defaultPeriod = {
+      start: new Date(0).toISOString(),
+      end: new Date().toISOString()
+    };
+    
+    // Charger les statistiques initiales
+    fetchStats(defaultPeriod);
 
     // Écouter les événements de mise à jour des catégories
     const handleCategoryUpdate = () => {
-      fetchStats();
+      fetchStats(defaultPeriod);
     };
 
     window.addEventListener('categoryUpdated', handleCategoryUpdate);
@@ -52,7 +67,7 @@ export function useStats() {
     // Rafraîchir les données quand la page devient visible
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        fetchStats();
+        fetchStats(defaultPeriod);
       }
     };
 
