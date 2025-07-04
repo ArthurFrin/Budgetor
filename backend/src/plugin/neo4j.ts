@@ -45,6 +45,18 @@ declare module 'fastify' {
         totalCount: number;
         categoriesStats: any[];
       }>;
+      getMonthlyPurchaseStats: (options: {
+        userId: string;
+        startDate?: string;
+        endDate?: string;
+        months?: number;
+      }) => Promise<{
+        months: string[];
+        categoryStats: {
+          categoryId: string;
+          monthlyAmounts: number[];
+        }[];
+      }>;
       ensureUserExists: (userId: string) => Promise<void>;
       ensureCategoryExists: (categoryId: string) => Promise<void>;
     };
@@ -475,6 +487,125 @@ async function getPurchaseStats({
   }
 }
 
+async function getMonthlyPurchaseStats({
+  userId,
+  startDate,
+  endDate,
+  months = 6
+}: {
+  userId: string;
+  startDate?: string;
+  endDate?: string;
+  months?: number;
+}) {
+  const session = getSession();
+  try {
+    await ensureUserExists(userId);
+
+    // Si pas de date de fin, utiliser la date actuelle
+    const end = endDate ? new Date(endDate) : new Date();
+    
+    // Si pas de date de début, utiliser les X derniers mois
+    let start;
+    if (startDate) {
+      start = new Date(startDate);
+    } else {
+      start = new Date(end);
+      start.setMonth(start.getMonth() - (months - 1)); // -5 pour avoir 6 mois au total
+      start.setDate(1); // Premier jour du mois
+      start.setHours(0, 0, 0, 0);
+    }
+    
+    // Générer la liste des mois à inclure dans la requête
+    const monthList: string[] = [];
+    for (let i = 0; i < months; i++) {
+      const date = new Date(start);
+      date.setMonth(date.getMonth() + i);
+      
+      // Format année-mois (2023-01)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      monthList.push(`${year}-${month}`);
+    }
+    
+    const params: any = { 
+      userId,
+      startDate: start.toISOString(),
+      endDate: end.toISOString()
+    };
+    
+    // Requête pour obtenir les achats par mois et par catégorie
+    const query = `
+      MATCH (p:Purchase)-[:MADE_BY]->(u:User {id: $userId})
+      WHERE p.date >= datetime($startDate) AND p.date <= datetime($endDate)
+      OPTIONAL MATCH (p)-[:BELONGS_TO]->(c:Category)
+      WITH 
+        p,
+        CASE WHEN c IS NULL THEN 'other' ELSE c.id END AS categoryId,
+        datetime(p.date).year + '-' + 
+        CASE 
+          WHEN datetime(p.date).month < 10 THEN '0' + datetime(p.date).month 
+          ELSE datetime(p.date).month 
+        END AS yearMonth
+      WITH 
+        categoryId, 
+        yearMonth,
+        sum(p.price) AS monthTotal
+      RETURN 
+        categoryId,
+        yearMonth,
+        monthTotal
+      ORDER BY 
+        yearMonth, 
+        categoryId
+    `;
+    
+    const result = await session.executeRead(tx => tx.run(query, params));
+    
+    // Organiser les résultats
+    const categoryMonthTotals = new Map<string, Map<string, number>>();
+    
+    // Initialiser la structure
+    result.records.forEach(record => {
+      const categoryId = record.get('categoryId');
+      const yearMonth = record.get('yearMonth');
+      const monthTotal = 
+        typeof record.get('monthTotal') === 'number' 
+          ? record.get('monthTotal')
+          : record.get('monthTotal').toNumber();
+      
+      if (!categoryMonthTotals.has(categoryId)) {
+        categoryMonthTotals.set(categoryId, new Map<string, number>());
+      }
+      
+      categoryMonthTotals.get(categoryId)!.set(yearMonth, monthTotal);
+    });
+    
+    // Transformer les données au format souhaité
+    const categoryStats = Array.from(categoryMonthTotals.entries()).map(([categoryId, monthValues]) => {
+      const monthlyAmounts = monthList.map(month => 
+        monthValues.get(month) || 0
+      );
+      
+      return {
+        categoryId,
+        monthlyAmounts
+      };
+    });
+    
+    return {
+      months: monthList.map(yearMonth => {
+        const [year, month] = yearMonth.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1);
+        return date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      }),
+      categoryStats
+    };
+  } finally {
+    await session.close();
+  }
+}
+
   fastify.decorate('neo4j', {
     driver,
     getSession,
@@ -483,6 +614,7 @@ async function getPurchaseStats({
     updatePurchase,
     deletePurchase,
     getPurchaseStats,
+    getMonthlyPurchaseStats,
     ensureUserExists,
     ensureCategoryExists
   });

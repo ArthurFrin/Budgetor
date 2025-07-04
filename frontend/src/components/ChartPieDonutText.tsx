@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { Pie, PieChart } from "recharts";
 
@@ -63,7 +61,7 @@ export function ChartPieDonutText({
   };
 
   return (
-    <Card className="flex flex-col w-xl">
+    <Card className="flex flex-col w-xl h-fit">
       <CardHeader className="items-center pb-0">
         <CardTitle>Dépenses par catégorie</CardTitle>
         <CardDescription className="w-full">

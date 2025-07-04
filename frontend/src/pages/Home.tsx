@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useStats, type TimePeriod } from "@/hooks/use-stats";
 import { ChartPieDonutText } from "@/components/ChartPieDonutText";
+import { ChartBarStacked } from "@/components/ChartBarStacked";
 
 function Home() {
   // État pour la catégorie sélectionnée
@@ -48,23 +49,22 @@ function Home() {
           </div>
           
           <div>
-            <div className="flex">
+            <div className="flex flex-grow gap-4 flex-col lg:flex-row">
               <ChartPieDonutText 
                 categoriesStats={filteredCategoryStats || []} 
                 onPeriodChange={handlePeriodChange}
               />
+              <ChartBarStacked onPeriodChange={handlePeriodChange} />
             </div>
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-lg font-semibold">Dépenses par catégorie</h3>
             </div>
             
-            {/* Filtres par catégorie (boutons de catégorie) */}
             <div className="flex flex-wrap gap-2 mb-4">
               {stats.categoriesStats.map((categoryStat) => (
                 <button
                   key={`filter-${categoryStat.category.id}`}
                   onClick={() => {
-                    // Toggle: si déjà sélectionné, désélectionner, sinon sélectionner
                     if (selectedCategory === categoryStat.category.id) {
                       setSelectedCategory(null);
                     } else {

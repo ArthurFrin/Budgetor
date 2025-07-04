@@ -282,3 +282,62 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
     return reply.code(500).send({ error: "Erreur lors de la récupération des statistiques." });
   }
 }
+
+export async function getMonthlyPurchaseStats(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    await request.jwtVerify();
+    const user = request.user as { id: string; email: string };
+
+    const { startDate, endDate, months } = request.query as {
+      startDate?: string;
+      endDate?: string;
+      months?: string;
+    };
+
+    // Récupérer les statistiques mensuelles depuis Neo4j
+    const monthlyStats = await request.server.neo4j.getMonthlyPurchaseStats({
+      userId: user.id,
+      startDate,
+      endDate,
+      months: months ? parseInt(months) : 6
+    });
+
+    // Récupérer les catégories depuis Prisma (filtrer "other" qui n'est pas un ObjectID valide)
+    const validCategoryIds = monthlyStats.categoryStats
+      .map(stat => stat.categoryId)
+      .filter(id => id !== 'other' && id !== null && id !== undefined);
+    
+    const categories = validCategoryIds.length > 0 ? 
+      await request.server.prisma.category.findMany({
+        where: {
+          id: { in: validCategoryIds }
+        }
+      }) : [];
+
+    // Mapper les catégories aux statistiques
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    
+    const categoryStatsWithDetails = monthlyStats.categoryStats.map(stat => {
+      if (stat.categoryId === 'other') {
+        return {
+          category: { id: 'other', name: 'Autre', color: '#cccccc' },
+          monthlyAmounts: stat.monthlyAmounts
+        };
+      }
+      return {
+        category: categoryMap.get(stat.categoryId) || { id: stat.categoryId, name: 'Inconnu', color: '#cccccc' },
+        monthlyAmounts: stat.monthlyAmounts
+      };
+    });
+
+    const result = {
+      months: monthlyStats.months,
+      categoryStats: categoryStatsWithDetails
+    };
+
+    return reply.send(result);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques mensuelles:', error);
+    return reply.code(500).send({ error: "Erreur lors de la récupération des statistiques mensuelles." });
+  }
+}

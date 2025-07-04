@@ -1,6 +1,3 @@
-"use client";
-
-import * as React from "react";
 import { DateRangePicker } from "./DateRangePicker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
