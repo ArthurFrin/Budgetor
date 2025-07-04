@@ -124,6 +124,10 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       tags
     });
 
+    // Invalider les caches de statistiques pour cet utilisateur
+    await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
+    await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
+
     // Ajouter les détails de la catégorie
     const purchaseWithCategory = {
       ...purchase,
@@ -181,6 +185,10 @@ export async function updatePurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
+    // Invalider les caches de statistiques pour cet utilisateur
+    await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
+    await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
+
     // Récupérer les détails de la catégorie depuis Prisma si l'achat a une catégorie
     let category = null;
     if (purchase.categoryId) {
@@ -217,12 +225,18 @@ export async function deletePurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(404).send({ error: "Achat non trouvé." });
     }
 
+    // Invalider les caches de statistiques pour cet utilisateur
+    await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
+    await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
+
     return reply.send({ message: "Achat supprimé avec succès." });
   } catch (error) {
     console.error('Erreur lors de la suppression de l\'achat:', error);
     return reply.code(500).send({ error: "Erreur lors de la suppression de l'achat." });
   }
 }
+
+import { RedisHelper } from '../plugin/redis';
 
 export async function getPurchaseStats(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -234,7 +248,17 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       endDate?: string;
     };
 
-    // Récupérer les statistiques depuis Neo4j
+    // Clé de cache unique par utilisateur et période
+    const cacheKey = `stats:${user.id}:${startDate || 'all'}:${endDate || 'now'}`;
+    
+    // Vérifier si les données sont en cache
+    const cachedStats = await RedisHelper.getCache(request.server.redis, cacheKey);
+    if (cachedStats) {
+      console.log('Returning cached stats');
+      return reply.send(cachedStats);
+    }
+
+    // Si pas en cache, récupérer les statistiques depuis Neo4j
     const stats = await request.server.neo4j.getPurchaseStats({
       userId: user.id,
       startDate,
@@ -276,6 +300,9 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       categoriesStats
     };
 
+    // Stocker dans le cache pour 5 minutes (300 secondes)
+    await RedisHelper.setCache(request.server.redis, cacheKey, statsWithCategories, 300);
+
     return reply.send(statsWithCategories);
   } catch (error) {
     console.error('Erreur lors de la récupération des statistiques:', error);
@@ -293,13 +320,25 @@ export async function getMonthlyPurchaseStats(request: FastifyRequest, reply: Fa
       endDate?: string;
       months?: string;
     };
+    
+    const monthsNumber = months ? parseInt(months) : 6;
+
+    // Clé de cache unique par utilisateur, période et nombre de mois
+    const cacheKey = `monthly_stats:${user.id}:${startDate || 'all'}:${endDate || 'now'}:${monthsNumber}`;
+    
+    // Vérifier si les données sont en cache
+    const cachedStats = await RedisHelper.getCache(request.server.redis, cacheKey);
+    if (cachedStats) {
+      console.log('Returning cached monthly stats');
+      return reply.send(cachedStats);
+    }
 
     // Récupérer les statistiques mensuelles depuis Neo4j
     const monthlyStats = await request.server.neo4j.getMonthlyPurchaseStats({
       userId: user.id,
       startDate,
       endDate,
-      months: months ? parseInt(months) : 6
+      months: monthsNumber
     });
 
     // Récupérer les catégories depuis Prisma (filtrer "other" qui n'est pas un ObjectID valide)
@@ -334,6 +373,9 @@ export async function getMonthlyPurchaseStats(request: FastifyRequest, reply: Fa
       months: monthlyStats.months,
       categoryStats: categoryStatsWithDetails
     };
+    
+    // Stocker dans le cache pour 5 minutes (300 secondes)
+    await RedisHelper.setCache(request.server.redis, cacheKey, result, 300);
 
     return reply.send(result);
   } catch (error) {
