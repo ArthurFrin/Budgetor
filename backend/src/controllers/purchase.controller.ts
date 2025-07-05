@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+import { RedisHelper } from '../plugin/redis';
 
 export async function getPurchases(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -23,7 +24,6 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       offset: offset ? parseInt(offset) : undefined
     });
 
-    // Récupérer les catégories depuis Prisma (filtrer les IDs non valides)
     const validCategoryIds = [...new Set(purchases.map(p => p.categoryId))]
       .filter(id => id !== 'other' && id !== null && id !== undefined);
     
@@ -96,7 +96,6 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
     }
 
-    // Vérifier que la catégorie existe (toujours via Prisma) si une catégorie est fournie
     let categoryObj = null;
     if (categoryId && categoryId !== 'other') {
       categoryObj = await request.server.prisma.category.findUnique({
@@ -110,11 +109,9 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
         });
       }
     } else if (categoryId === 'other') {
-      // Utiliser une catégorie par défaut "Autre" 
       categoryObj = { id: 'other', name: 'Autre', color: '#cccccc' };
     }
 
-    // Créer l'achat dans Neo4j
     const purchase = await request.server.neo4j.createPurchase({
       description,
       price,
@@ -124,11 +121,9 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       tags
     });
 
-    // Invalider les caches de statistiques pour cet utilisateur
     await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
     await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
     
-    // Ajouter les détails de la catégorie
     const purchaseWithCategory = {
       ...purchase,
       category: categoryObj
@@ -137,25 +132,6 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
     // Ajouter l'achat à ChromaDB pour l'assistant
     try {
       const { purchases } = await request.server.getBudgetCollections();
-      
-      console.log(`Vérification si l'achat existe déjà dans ChromaDB avec ID: ${purchase.id}`);
-      
-      // Vérifier si l'entrée existe déjà dans ChromaDB (pour éviter les doublons)
-      try {
-        await purchases.get({
-          ids: [purchase.id]
-        });
-        
-        // Si on arrive ici, cela signifie que l'ID existe déjà
-        console.log(`Achat avec ID ${purchase.id} déjà présent dans ChromaDB, suppression avant insertion`);
-        
-        await purchases.delete({
-          ids: [purchase.id]
-        });
-      } catch (error) {
-        // L'ID n'existe pas, ce qui est normal pour une création
-        console.log(`Achat avec ID ${purchase.id} n'existe pas encore dans ChromaDB, création normale`);
-      }
       
       // Formater les données pour ChromaDB
       const purchaseDoc = `Achat effectué le ${new Date(date).toLocaleDateString('fr-FR')} : ${description || 'Sans description'} - Montant: ${price}€ - Catégorie: ${categoryObj?.name || 'Non catégorisé'}${tags?.length ? ` - Tags: ${tags.join(', ')}` : ''}`;
@@ -175,7 +151,6 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
       console.log(`Achat ajouté à ChromaDB avec succès. ID: ${purchase.id}`);
     } catch (chromaError) {
       console.error('Erreur lors de l\'ajout de l\'achat à ChromaDB:', chromaError);
-      // On continue malgré l'erreur de ChromaDB car l'achat est déjà enregistré dans Neo4j
     }
 
     return reply.code(201).send(purchaseWithCategory);
@@ -184,163 +159,6 @@ export async function createPurchase(request: FastifyRequest, reply: FastifyRepl
     return reply.code(500).send({ error: "Erreur lors de la création de l'achat." });
   }
 }
-
-export async function updatePurchase(request: FastifyRequest, reply: FastifyReply) {
-  try {
-    await request.jwtVerify();
-    const user = request.user as { id: string; email: string };
-
-    const { id } = request.params as { id: string };
-    const { title, description, price, date, categoryId, tags } = request.body as {
-      title?: string;
-      description?: string;
-      price?: number;
-      date?: string;
-      categoryId?: string;
-      tags?: string[];
-    };
-
-    if (price !== undefined && price <= 0) {
-      return reply.code(400).send({ error: "Le prix doit être supérieur à 0." });
-    }
-
-    // Vérifier que la catégorie existe si elle est fournie
-    if (categoryId) {
-      const category = await request.server.prisma.category.findUnique({
-        where: { id: categoryId }
-      });
-
-      if (!category) {
-        return reply.code(404).send({ error: "Catégorie non trouvée." });
-      }
-    }
-
-    const updateData: any = {};
-    if (description !== undefined) updateData.description = description;
-    if (price !== undefined) updateData.price = price;
-    if (date !== undefined) updateData.date = date;
-    if (categoryId !== undefined) updateData.categoryId = categoryId;
-    if (tags !== undefined) updateData.tags = tags;
-
-    // Mettre à jour l'achat dans Neo4j
-    const purchase = await request.server.neo4j.updatePurchase(id, user.id, updateData);
-
-    if (!purchase) {
-      return reply.code(404).send({ error: "Achat non trouvé." });
-    }
-
-    // Invalider les caches de statistiques pour cet utilisateur
-    await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
-    await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
-
-    // Récupérer les détails de la catégorie depuis Prisma si l'achat a une catégorie
-    let category = null;
-    if (purchase.categoryId) {
-      category = await request.server.prisma.category.findUnique({
-        where: { id: purchase.categoryId }
-      });
-    }
-    
-    // Mettre à jour l'entrée dans ChromaDB
-    try {
-      const { purchases } = await request.server.getBudgetCollections();
-      
-      console.log(`Mise à jour dans ChromaDB: Suppression de l'achat avec ID: ${id}`);
-      
-      // Supprimer l'ancienne entrée
-      try {
-        await purchases.delete({
-          ids: [id]
-        });
-        console.log(`Ancien achat avec ID ${id} supprimé de ChromaDB`);
-      } catch (deleteError) {
-        console.log(`Pas d'ancien achat avec ID ${id} trouvé dans ChromaDB, ou erreur lors de la suppression:`, deleteError);
-      }
-      
-      // Ajouter la nouvelle version
-      const categoryObj = category || (purchase.categoryId ? 
-        { id: purchase.categoryId, name: 'Inconnu', color: '#cccccc' } : 
-        { id: 'other', name: 'Autre', color: '#cccccc' });
-      
-      const purchaseDoc = `Achat effectué le ${new Date(purchase.date).toLocaleDateString('fr-FR')} : ${purchase.description || 'Sans description'} - Montant: ${purchase.price}€ - Catégorie: ${categoryObj?.name || 'Non catégorisé'}${purchase.tags?.length ? ` - Tags: ${purchase.tags.join(', ')}` : ''}`;
-      
-      await purchases.add({
-        ids: [purchase.id],
-        metadatas: [{ 
-          user_id: user.id,
-          price: purchase.price,
-          date: purchase.date,
-          category: categoryObj?.name || 'Non catégorisé',
-          category_id: categoryObj?.id || 'other'
-        }],
-        documents: [purchaseDoc]
-      });
-      
-      console.log(`Nouvelle version de l'achat ajoutée à ChromaDB avec succès. ID: ${purchase.id}`);
-    } catch (chromaError) {
-      console.error('Erreur lors de la mise à jour de l\'achat dans ChromaDB:', chromaError);
-      // On continue malgré l'erreur de ChromaDB car l'achat est déjà mis à jour dans Neo4j
-    }
-
-    // Si pas de catégorie ou catégorie non trouvée, afficher comme "Autre"
-    const purchaseWithCategory = {
-      ...purchase,
-      category: category || (purchase.categoryId ? 
-        { id: purchase.categoryId, name: 'Inconnu', color: '#cccccc' } : 
-        { id: 'other', name: 'Autre', color: '#cccccc' })
-    };
-
-    return reply.send(purchaseWithCategory);
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de l\'achat:', error);
-    return reply.code(500).send({ error: "Erreur lors de la mise à jour de l'achat." });
-  }
-}
-
-export async function deletePurchase(request: FastifyRequest, reply: FastifyReply) {
-  try {
-    await request.jwtVerify();
-    const user = request.user as { id: string; email: string };
-
-    const { id } = request.params as { id: string };
-
-    const success = await request.server.neo4j.deletePurchase(id, user.id);
-
-    if (!success) {
-      return reply.code(404).send({ error: "Achat non trouvé." });
-    }
-
-    // Invalider les caches de statistiques pour cet utilisateur
-    await RedisHelper.deleteCachePattern(request.server.redis, `stats:${user.id}:*`);
-    await RedisHelper.deleteCachePattern(request.server.redis, `monthly_stats:${user.id}:*`);
-    
-    // Supprimer l'entrée correspondante dans ChromaDB
-    try {
-      const { purchases } = await request.server.getBudgetCollections();
-      
-      console.log(`Suppression de l'achat avec ID: ${id} de ChromaDB`);
-      
-      try {
-        await purchases.delete({
-          ids: [id]
-        });
-        console.log(`Achat avec ID ${id} supprimé avec succès de ChromaDB`);
-      } catch (deleteError) {
-        console.log(`Pas d'achat avec ID ${id} trouvé dans ChromaDB, ou erreur lors de la suppression:`, deleteError);
-      }
-    } catch (chromaError) {
-      console.error('Erreur lors de la suppression de l\'achat dans ChromaDB:', chromaError);
-      // On continue malgré l'erreur de ChromaDB car l'achat est déjà supprimé de Neo4j
-    }
-
-    return reply.send({ message: "Achat supprimé avec succès." });
-  } catch (error) {
-    console.error('Erreur lors de la suppression de l\'achat:', error);
-    return reply.code(500).send({ error: "Erreur lors de la suppression de l'achat." });
-  }
-}
-
-import { RedisHelper } from '../plugin/redis';
 
 export async function getPurchaseStats(request: FastifyRequest, reply: FastifyReply) {
   try {

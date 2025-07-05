@@ -15,7 +15,6 @@ import { api } from "@/lib/api";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useNavigate } from "react-router";
 
 // Schéma de validation Zod
 const purchaseSchema = z.object({
@@ -34,7 +33,6 @@ type PurchaseFormData = z.infer<typeof purchaseSchema>;
 
 function NewPurchase() {
   const [apiError, setApiError] = useState("");
-  const navigate = useNavigate();
 
   const {
     register,

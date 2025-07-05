@@ -152,8 +152,6 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
   async function createPurchase(purchaseData: PurchaseData): Promise<any> {
     const session = getSession();
     try {
-      await ensureUserExists(purchaseData.userId);
-      
       let query;
       let params: any = {
         userId: purchaseData.userId,
@@ -164,11 +162,11 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
       };
 
       if (purchaseData.categoryId) {
-        await ensureCategoryExists(purchaseData.categoryId);
         params.categoryId = purchaseData.categoryId;
+        // Tout en une seule transaction atomique pour éviter les doublons
         query = `
-          MATCH (u:User {id: $userId})
-          MATCH (c:Category {id: $categoryId})
+          MERGE (u:User {id: $userId})
+          MERGE (c:Category {id: $categoryId})
           CREATE (p:Purchase {
             id: randomUUID(),
             description: $description,
@@ -185,7 +183,7 @@ const neo4jPlugin: FastifyPluginAsync<Neo4jPluginOptions> = async (fastify, opti
       } else {
         // Création sans catégorie
         query = `
-          MATCH (u:User {id: $userId})
+          MERGE (u:User {id: $userId})
           CREATE (p:Purchase {
             id: randomUUID(),
             description: $description,

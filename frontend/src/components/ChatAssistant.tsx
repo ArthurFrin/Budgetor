@@ -1,5 +1,3 @@
-"use client";
-
 import * as React from "react";
 import { BotMessageSquare, Send } from "lucide-react";
 import {
@@ -13,7 +11,9 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/lib/api"; // ✅ Ton instance Ky
+import { api } from "@/lib/api";
+import { useContext } from "react";
+import { AuthContext } from "@/contexts/AuthContext";
 
 interface Message {
   id: string;
@@ -23,6 +23,7 @@ interface Message {
 }
 
 export function ChatAssistant() {
+  const { user } = useContext(AuthContext);
   const [isOpen, setIsOpen] = React.useState(false);
   const [messages, setMessages] = React.useState<Message[]>([
     {
@@ -62,9 +63,12 @@ export function ChatAssistant() {
 
     try {
       // Appel API via ky
+      if (!user || !user.id) {
+        return;
+      }
       const res = await api.post("assistant", {
         json: {
-          userId: "user123", // Remplace par l'ID réel si nécessaire
+          userId: user?.id,
           question: inputValue,
         },
       });
@@ -143,6 +147,22 @@ export function ChatAssistant() {
               </div>
             </div>
           ))}
+          
+          {/* Animation de frappe quand l'IA écrit */}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-lg px-4 py-2 bg-muted">
+                <div className="flex items-center space-x-1">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 

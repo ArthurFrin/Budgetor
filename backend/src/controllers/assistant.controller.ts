@@ -61,6 +61,21 @@ ${contextTips}
 Réponds à la question suivante :
 ${question}`;
 
+console.log("Payload envoyé à Mistral:", JSON.stringify({
+  model: "mistral-medium",
+  max_tokens: 200,
+  messages: [
+    {
+      role: "system",
+      content: "Tu es un assistant expert en gestion de budget. Tu réponds avec un ton direct, non professionnel, et un trash talk, sans être vulgaire. Tes réponses sont concises et ne dépassent pas 5 phrases."
+    },
+    {
+      role: "user",
+      content: prompt
+    }
+  ],
+}, null, 2));
+
   // Appel Mistral API avec fetch global
   const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST",
@@ -101,5 +116,41 @@ ${question}`;
 
   return reply.send({
     answer: aiAnswer,
+  });
+};
+
+export const assistantControllerChromaOnly = (fastify: FastifyInstance) => async (
+  request: FastifyRequest<{ Body: AssistantRequestBody }>,
+  reply: FastifyReply
+) => {
+  const { userId, question } = request.body;
+
+  // Récupérer les collections ChromaDB
+  const { userInfo, tips, purchases } = await fastify.getBudgetCollections();
+
+  const userData = await userInfo.query({
+    queryTexts: [question],
+    nResults: 5,
+    where: { user_id: userId },
+  });
+
+  const tipsData = await tips.query({
+    queryTexts: [question],
+    nResults: 3,
+  });
+
+  const purchasesData = await purchases.query({
+    queryTexts: [question],
+    nResults: 5,
+    where: { user_id: userId },
+  });
+
+  const contextTips = tipsData.documents.flat().join("\n");
+  const contextPurchases = purchasesData.documents.flat().join("\n");
+
+  // Retourner uniquement les résultats ChromaDB et l’historique
+  return reply.send({
+    tips: contextTips,
+    purchases: contextPurchases,
   });
 };
