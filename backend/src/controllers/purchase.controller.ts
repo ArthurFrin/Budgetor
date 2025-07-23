@@ -35,7 +35,7 @@ export async function getPurchases(request: FastifyRequest, reply: FastifyReply)
       }) : [];
 
     // Mapper les catégories aux achats
-    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const categoryMap = new Map(categories.map((cat: any) => [cat.id, cat]));
     const purchasesWithCategories = purchases.map(purchase => {
       if (!purchase.categoryId) {
         return {
@@ -200,7 +200,7 @@ export async function getPurchaseStats(request: FastifyRequest, reply: FastifyRe
       }) : [];
 
     // Mapper les catégories aux statistiques
-    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const categoryMap = new Map(categories.map((cat: any) => [cat.id, cat]));
     const categoriesStats = stats.categoriesStats.map(stat => {
       if (stat.categoryId === 'other') {
         return {
@@ -276,7 +276,7 @@ export async function getMonthlyPurchaseStats(request: FastifyRequest, reply: Fa
       }) : [];
 
     // Mapper les catégories aux statistiques
-    const categoryMap = new Map(categories.map(cat => [cat.id, cat]));
+    const categoryMap = new Map(categories.map((cat: any) => [cat.id, cat]));
     
     const categoryStatsWithDetails = monthlyStats.categoryStats.map(stat => {
       if (stat.categoryId === 'other') {

@@ -23,8 +23,7 @@ export default fp(async (fastify: FastifyInstance) => {
   fastify.decorate("chroma", chroma);
 
   // Méthode pratique pour récupérer les collections
-  fastify.decorate(
-    "getBudgetCollections",
+  fastify.decorate("getBudgetCollections",
     async () => {
       const userInfo = await chroma.getOrCreateCollection({
         name: "budget_user_info",

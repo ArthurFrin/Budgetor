@@ -46,7 +46,7 @@ export default function MainLayout() {
         <SidebarHeader className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-3 py-4">
             <img src={logo} alt="logo" className="w-10 h-8 object-cover rounded-md" />
-            <h2 className=" font-semibold text-foreground">Balance ton compte</h2>
+            <h2 className=" font-semibold text-foreground">Budgetor</h2>
           </div>
         </SidebarHeader>
         <SidebarContent className="py-4">
