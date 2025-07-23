@@ -21,7 +21,7 @@ interface SendMailOptions {
 export async function sendMail({ to, subject, text, html }: SendMailOptions) {
   try {
     const info = await transporter.sendMail({
-      from: `"Balance Ton Compte" <noreply@balancetoncompte.fr>`,
+      from: `"Budgetor" <noreply@balancetoncompte.fr>`,
       to,
       subject,
       text,
