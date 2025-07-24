@@ -2,68 +2,68 @@
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-Currently, two official plugins are available:
+# Budgetor Frontend
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Budgetor Frontend est l'interface utilisateur de l'application Budgetor, permettant la gestion des budgets, catégories, achats et utilisateurs via une interface moderne et réactive.
 
-## Expanding the ESLint configuration
+## Stack technique
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **React** avec **TypeScript**
+- **Vite** : bundler rapide pour le développement et la production
+- **ESLint** : linting et qualité du code
+- **Tailwind CSS** : framework utilitaire pour le style
+- **shadcn/ui** : librairie de composants UI modernes
+- **Lucide Icons** : icônes SVG open source
+- **Context API** : gestion de l'état global (authentification, etc.)
+- **Custom Hooks** : logique réutilisable (catégories, stats, etc.)
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Structure des dossiers
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+- `src/` : code source principal
+  - `components/` : composants UI (formulaires, graphiques, layout, etc.)
+  - `contexts/` : contextes React (ex : AuthContext)
+  - `hooks/` : hooks personnalisés
+  - `lib/` : utilitaires et API client
+  - `pages/` : pages principales de l'application (Home, Login, Register, etc.)
+  - `types/` : définitions TypeScript des entités (user, category, purchase, etc.)
+  - `assets/` : images et ressources statiques
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Démarrage du projet
+
+1. Installer les dépendances :
+   ```bash
+   cd frontend
+   npm install
+   ```
+2. Lancer le serveur de développement :
+   ```bash
+   npm run dev
+   ```
+3. Accéder à l'application sur [http://localhost:5173](http://localhost:5173) (par défaut)
+
+## Build et production
+
+Pour builder le projet pour la production :
+```bash
+npm run build
 ```
+Le dossier `dist/` contiendra les fichiers optimisés.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Linting et qualité du code
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+ESLint est configuré pour TypeScript et React. Voir le fichier `eslint.config.js` pour personnaliser les règles.
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Configuration
+
+Les variables d'environnement peuvent être définies dans un fichier `.env` à la racine du projet pour configurer l'URL de l'API et autres paramètres.
+
+## Fonctionnalités principales
+
+- Authentification (login, register, reset password)
+- Gestion des achats et des catégories
+- Visualisation des statistiques (graphiques, tableaux)
+- Assistant conversationnel
+
+## Licence
+
+MIT
