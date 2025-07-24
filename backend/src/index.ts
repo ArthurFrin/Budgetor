@@ -11,6 +11,7 @@ import fastifyFormbody from "@fastify/formbody";
 import cors from '@fastify/cors';
 import assistantRoutes from "./routes/assistant.routes";
 import chromaPlugin from "./plugin/chromadb";
+import swaggerPlugin from './plugin/swagger';
 
 const app = Fastify({ logger: true });
 
@@ -38,6 +39,7 @@ app.register(redisPlugin, {
   password: process.env.REDIS_PASSWORD
 });
 app.register(chromaPlugin);
+app.register(swaggerPlugin);
 
 app.register(assistantRoutes, { prefix: "/api" });
 
