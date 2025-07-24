@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api";
 import type { Category, CreateCategoryData } from "@/types";
+import {useTranslation} from "react-i18next";
 
 interface CategoryFormProps {
   category?: Category;
@@ -31,6 +32,7 @@ const PRESET_COLORS = [
 ];
 
 export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<CreateCategoryData>({
     name: category?.name || "",
     color: category?.color || "#3b82f6",
@@ -78,20 +80,20 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
       )}
       
       <div className="space-y-2">
-        <Label htmlFor="name">Nom de la catégorie</Label>
+        <Label htmlFor="name">{t("category.formDialog.form.name.label")}</Label>
         <Input
           id="name"
           type="text"
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-          placeholder="Entrez le nom de la catégorie"
+          placeholder={t("category.formDialog.form.name.placeholder")}
           disabled={loading}
           required
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="color">Couleur</Label>
+        <Label htmlFor="color">{t("category.formDialog.form.color.label")}</Label>
         <div className="space-y-3">
           <Input
             id="color"
@@ -129,15 +131,15 @@ export function CategoryForm({ category, onSuccess, onCancel }: CategoryFormProp
           onClick={onCancel}
           disabled={loading}
         >
-          Annuler
+          {t("category.formDialog.cancel")}
         </Button>
         <Button
           type="submit"
           disabled={loading || !formData.name.trim()}
         >
           {loading 
-            ? (category ? "Modification..." : "Création...") 
-            : (category ? "Modifier" : "Créer")
+            ? t("category.formDialog.submitting")
+            : (category ? t("category.formDialog.edit") : t("category.formDialog.create"))
           }
         </Button>
       </div>

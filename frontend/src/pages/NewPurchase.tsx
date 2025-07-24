@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {useTranslation} from "react-i18next";
 
 // Schéma de validation Zod
 const purchaseSchema = z.object({
@@ -32,6 +33,7 @@ const purchaseSchema = z.object({
 type PurchaseFormData = z.infer<typeof purchaseSchema>;
 
 function NewPurchase() {
+  const { t } = useTranslation();
   const [apiError, setApiError] = useState("");
 
   const {
@@ -82,12 +84,12 @@ function NewPurchase() {
     <div className="flex items-center min-h-screen justify-center">
       <Card className="w-full max-w-lg">
         <CardHeader>
-          <CardTitle className="text-xl font-bold text-center">Ajouter une dépense</CardTitle>
+          <CardTitle className="text-xl font-bold text-center">{t("createSpending.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="price">Montant (€)</Label>
+              <Label htmlFor="price">{t("createSpending.amount.label")}</Label>
               <Input
                 id="price"
                 type="number"
@@ -100,11 +102,11 @@ function NewPurchase() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("createSpending.description.label")}</Label>
               <Input
                 id="description"
                 type="text"
-                placeholder="ex: Restaurant"
+                placeholder={t("createSpending.description.placeholder")}
                 {...register("description")}
               />
               {errors.description && (
@@ -112,7 +114,7 @@ function NewPurchase() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
+              <Label htmlFor="date">{t("createSpending.date.label")}</Label>
               <Controller
                 control={control}
                 name="date"
@@ -130,7 +132,7 @@ function NewPurchase() {
                         {field.value ? (
                           format(field.value, "PPP", { locale: fr })
                         ) : (
-                          <span>Sélectionner une date</span>
+                          <span>{t("createSpending.date.calendarTitle")}</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -149,7 +151,7 @@ function NewPurchase() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="category">Catégorie</Label>
+              <Label htmlFor="category">{t("createSpending.category.label")}</Label>
               <Controller
                 name="category"
                 control={control}
@@ -165,11 +167,11 @@ function NewPurchase() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tags">Tags (séparés par des virgules)</Label>
+              <Label htmlFor="tags">{t("createSpending.tags.label")}</Label>
               <Input
                 id="tags"
                 type="text"
-                placeholder="ex: midi,pro"
+                placeholder={t("createSpending.tags.placeholder")}
                 {...register("tags")}
               />
               {errors.tags && (
@@ -186,7 +188,7 @@ function NewPurchase() {
               className="w-full"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Enregistrement..." : "Ajouter"}
+              {isSubmitting ? t("createSpending.submitting") :  t("createSpending.submit")}
             </Button>
           </form>
         </CardContent>

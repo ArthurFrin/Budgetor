@@ -25,6 +25,7 @@ import { api } from "@/lib/api";
 import { useCategories } from "@/hooks/use-categories";
 import type { Purchase } from "@/types/purchase";
 import type { Category } from "@/types/category";
+import {useTranslation} from "react-i18next";
 
 interface PurchaseWithCategory extends Purchase {
   category?: Category;
@@ -36,6 +37,7 @@ export default function MyPurchases() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { categories } = useCategories();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,48 +61,45 @@ export default function MyPurchases() {
     () => [
       {
         accessorKey: "date",
-        header: "Date",
+        header: t("spending.table.date.header"),
         cell: ({ row }) => {
           const date = new Date(row.getValue("date"));
           return (
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              {date.toLocaleDateString("fr-FR")}
+              {t("common.date", {date: date})}
             </div>
           );
         },
       },
       {
         accessorKey: "description",
-        header: "Description",
+        header: t("spending.table.description.header"),
         cell: ({ row }) => (
           <div className="font-medium">{row.getValue("description")}</div>
         ),
       },
       {
         accessorKey: "price",
-        header: "Montant",
+        header: t("spending.table.amount.header"),
         cell: ({ row }) => {
           const amount = parseFloat(row.getValue("price"));
           return (
             <div className="text-right font-mono">
-              {new Intl.NumberFormat("fr-FR", {
-                style: "currency",
-                currency: "EUR",
-              }).format(amount)}
+              {t("common.currency", {amount: amount})}
             </div>
           );
         },
       },
       {
         accessorKey: "category",
-        header: "Catégorie",
+        header: t("spending.table.category.header"),
         cell: ({ row }) => {
           const category = row.getValue("category") as Category;
           
           // Vérifier si c'est un achat sans catégorie ou avec la catégorie "other"
           if (!category || category === null || category === undefined || category.id === 'other') {
-            return <Badge variant="outline">Autre</Badge>;
+            return <Badge variant="outline">{t("spending.table.category.other")}</Badge>;
           }
           
           return (
@@ -122,7 +121,7 @@ export default function MyPurchases() {
         },
       },
     ],
-    []
+    [t]
   );
 
   // Filtrer les achats par catégorie sélectionnée
@@ -173,7 +172,7 @@ export default function MyPurchases() {
       <div className="p-6">
         <Card>
           <CardContent className="p-6">
-            <div className="text-center">Chargement...</div>
+            <div className="text-center">{t("spending.loading")}</div>
           </CardContent>
         </Card>
       </div>
@@ -183,29 +182,25 @@ export default function MyPurchases() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Mes Dépenses</h1>
+        <h1 className="text-3xl font-bold">{t("spending.title")}</h1>
         <p className="text-muted-foreground">
-          Consultez et filtrez toutes vos dépenses
+          {t("spending.subtitle")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Liste des dépenses</CardTitle>
+          <CardTitle>{t("spending.table.title")}</CardTitle>
           <CardDescription>
-            {filteredData.length} dépense{filteredData.length > 1 ? "s" : ""}
+            {t("spending.table.subtitle.spendingCount", { count: filteredData.length })}
             {selectedCategory && (
               <>
-                {selectedCategory === "null" 
-                  ? " dans la catégorie \"Autre\" " 
-                  : ` dans la catégorie "${categories?.find(c => c.id === selectedCategory)?.name || ""}" `
-                }
+                {t("spending.table.subtitle.spendingInCategory", {
+                  category: selectedCategory
+                      ? (categories?.find(c => c.id === selectedCategory)?.name || t("spending.table.category.other"))
+                      : t("spending.table.category.other")}
+                )}
               </>
-            )}
-            {selectedCategory === "null" && (
-              <span className="text-xs text-muted-foreground">
-                (Achats sans catégorie: {purchases.filter(p => p.category === null || p.category === undefined).length})
-              </span>
             )}
           </CardDescription>
         </CardHeader>
@@ -214,7 +209,7 @@ export default function MyPurchases() {
           <div className="flex items-center gap-2 mb-4">
             <Search className="h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher dans toutes les colonnes..."
+              placeholder={t("spending.table.search.placeholder")}
               value={globalFilter ?? ""}
               onChange={(event) => setGlobalFilter(String(event.target.value))}
               className="max-w-sm"
@@ -224,7 +219,7 @@ export default function MyPurchases() {
           {/* Filtres par catégorie */}
           <div className="mb-4">
             <div className="mb-2">
-              <h3 className="text-sm font-medium text-muted-foreground">Filtrer par catégorie</h3>
+              <h3 className="text-sm font-medium text-muted-foreground">{t("spending.table.filter.byCategoryTitle")}</h3>
             </div>
             <div className="flex flex-wrap gap-2">
               {categories?.map((category) => (
@@ -320,7 +315,7 @@ export default function MyPurchases() {
                       colSpan={columns.length}
                       className="h-24 text-center"
                     >
-                      Aucune dépense trouvée.
+                      {t("spending.table.empty")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -331,9 +326,11 @@ export default function MyPurchases() {
           {/* Pagination */}
           <div className="flex items-center justify-between space-x-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} sur{" "}
-              {table.getPageCount()} ({table.getFilteredRowModel().rows.length}{" "}
-              résultat{table.getFilteredRowModel().rows.length > 1 ? "s" : ""})
+              {t("common.table.pagination.page", {
+                  page:  table.getState().pagination.pageIndex + 1,
+                  nbPage: table.getPageCount(),
+                  count: table.getFilteredRowModel().rows.length
+              })}
             </div>
             <div className="flex items-center space-x-2">
               <Button
@@ -343,7 +340,7 @@ export default function MyPurchases() {
                 disabled={!table.getCanPreviousPage()}
               >
                 <ChevronLeft className="h-4 w-4" />
-                Précédent
+                {t("common.table.pagination.previous")}
               </Button>
               <Button
                 variant="outline"
@@ -351,7 +348,7 @@ export default function MyPurchases() {
                 onClick={() => table.nextPage()}
                 disabled={!table.getCanNextPage()}
               >
-                Suivant
+                {t("common.table.pagination.next")}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
