@@ -23,8 +23,7 @@ import {
 
 import { useMonthlyStats } from "@/hooks/use-monthly-stats"
 import { type TimePeriod } from "@/hooks/use-stats"
-
-export const description = "A stacked bar chart with a legend"
+import i18next from "i18next";
 
 interface ChartBarStackedProps {
   onPeriodChange?: (period: TimePeriod) => void;
@@ -32,6 +31,8 @@ interface ChartBarStackedProps {
 
 export function ChartBarStacked({ onPeriodChange }: ChartBarStackedProps) {
   const { monthlyStats, loading, error, refetch } = useMonthlyStats(6);
+
+  const translate = i18next.getFixedT(null, null, "home.stats");
 
   // Fonction pour gérer les changements de période
   const handlePeriodChange = React.useCallback((newPeriod: TimePeriod) => {
@@ -87,16 +88,17 @@ export function ChartBarStacked({ onPeriodChange }: ChartBarStackedProps) {
 
     return data;
   }, [monthlyStats]);
+
   return (
     <Card className="flex-1">
       <CardHeader>
-        <CardTitle>Dépenses mensuelles</CardTitle>
-        <CardDescription>6 derniers mois</CardDescription>
+        <CardTitle>{translate("charts.monthlySpending.title")}</CardTitle>
+        <CardDescription>{translate("charts.monthlySpending.description")}</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center h-40 text-gray-500">
-            Chargement des données...
+            {translate("charts.monthlySpending.loading")}
           </div>
         ) : error ? (
           <div className="flex items-center justify-center h-40 text-red-500">
@@ -128,18 +130,18 @@ export function ChartBarStacked({ onPeriodChange }: ChartBarStackedProps) {
           </ChartContainer>
         ) : (
           <div className="flex items-center justify-center h-40 text-gray-500">
-            Aucune donnée disponible
+            {translate("charts.monthlySpending.empty")}
           </div>
         )}
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">
         {monthlyStats?.categoryStats && monthlyStats.categoryStats.length > 0 && (
           <div className="flex gap-2 leading-none font-medium">
-            <TrendingUp className="h-4 w-4" /> Évolution mensuelle des dépenses par catégorie
+            <TrendingUp className="h-4 w-4" /> {translate("charts.monthlySpending.footer.perCategory")}
           </div>
         )}
         <div className="text-muted-foreground leading-none">
-          Répartition des dépenses par catégorie sur les 6 derniers mois
+          {translate("charts.monthlySpending.footer.6Months")}
         </div>
       </CardFooter>
     </Card>

@@ -10,13 +10,17 @@ import {
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Plus, Tag, LogOut, ReceiptEuro } from "lucide-react";
+import {LayoutGrid, Plus, Tag, LogOut, ReceiptEuro} from "lucide-react";
 import logo from "../assets/logo.webp"; // Assuming you have a logo.svg in your assets folder
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
+import {supportedLanguages} from "@/i18n/i18n.ts";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select.tsx";
+import {useTranslation} from "react-i18next";
 
 export default function MainLayout() {
   const { user, logout } = useContext(AuthContext);
+  const {t, i18n} = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,19 +57,19 @@ export default function MainLayout() {
           <nav className="flex flex-col gap-1">
             <Link to="/" className={getLinkClasses("/")}>
               <LayoutGrid className="h-5 w-5" />
-              <span>Dashboard</span>
+              <span>{t("menu.home")}</span>
             </Link>
             <Link to="/purchase/new" className={getLinkClasses("/purchase/new")}>
               <Plus className="h-5 w-5" />
-              <span>Ajouter une dépense</span>
+              <span>{t("menu.createSpending")}</span>
             </Link>
             <Link to="/purchases" className={getLinkClasses("/purchases")}>
               <ReceiptEuro className="h-5 w-5" />
-              <span>Mes dépenses</span>
+              <span>{t("menu.mySpending")}</span>
             </Link>
             <Link to="/categories" className={getLinkClasses("/categories")}>
               <Tag className="h-5 w-5" />
-              <span>Mes catégories</span>
+              <span>{t("menu.myCategories")}</span>
             </Link>
           </nav>
         </SidebarContent>
@@ -74,12 +78,22 @@ export default function MainLayout() {
             <div className="space-y-3">
               <div className="flex flex-col gap-1">
                 <div className="text-xs text-muted-foreground tracking-wide">
-                  Connecté en tant que
+                  {t("menu.loggedInAs")}
                 </div>
                 <div className="font-medium text-sm text-foreground truncate">
                   {user.name ?? user.email}
                 </div>
               </div>
+              <Select onValueChange={i18n.changeLanguage} value={i18n.language}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {supportedLanguages.map((lang) => (
+                      <SelectItem value={lang}>{t(`menu.languages.${lang}`)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Button
                 variant="ghost"
                 size="sm"
@@ -87,7 +101,7 @@ export default function MainLayout() {
                 className="w-full text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 justify-start gap-2 transition-colors"
               >
                 <LogOut className="h-4 w-4" />
-                Se déconnecter
+                {t("menu.logout")}
               </Button>
             </div>
           )}

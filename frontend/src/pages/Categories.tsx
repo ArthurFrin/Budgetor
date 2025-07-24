@@ -16,8 +16,10 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import {useTranslation} from "react-i18next";
 
 function Categories() {
+  const { t } = useTranslation();
   const { categories, loading, error, deleteCategory, addCategory, updateCategory } = useCategories();
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -88,7 +90,7 @@ function Categories() {
   }, [categories, searchQuery]);
 
   if (loading) {
-    return <div>Chargement des catégories...</div>;
+    return <div>{t("category.loading")}</div>;
   }
 
   if (error) {
@@ -98,19 +100,19 @@ function Categories() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Catégories</h1>
+        <h1 className="text-2xl font-bold">{t("category.title")}</h1>
         <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Créer une catégorie
+              {t("category.create")}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Créer une nouvelle catégorie</DialogTitle>
+              <DialogTitle>{t("category.formDialog.createTitle")}</DialogTitle>
               <DialogDescription>
-                Ajoutez une nouvelle catégorie pour organiser vos achats.
+                {t("category.formDialog.createDescription")}
               </DialogDescription>
             </DialogHeader>
             <CategoryForm
@@ -125,7 +127,7 @@ function Categories() {
       <div className="flex items-center gap-2 mb-4">
         <Search className="h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Rechercher des catégories..."
+          placeholder={t("category.search.placeholder")}
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           className="max-w-sm"
@@ -133,7 +135,7 @@ function Categories() {
       </div>
       <div className="grid gap-4">
         {filteredCategories.length === 0 ? (
-          <p className="text-gray-500">Aucune catégorie trouvée.</p>
+          <p className="text-gray-500">{t("category.empty")}</p>
         ) : (
           filteredCategories.map((category) => (
             <div
@@ -148,7 +150,7 @@ function Categories() {
                 <div>
                   <h3 className="font-semibold">{category.name}</h3>
                   <p className="text-sm text-gray-500">
-                    Créée le {new Date(category.createdAt).toLocaleDateString()}
+                    {t("category.creationDate", { date: new Date(category.createdAt) })}
                   </p>
                 </div>
               </div>
@@ -179,9 +181,9 @@ function Categories() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier la catégorie</DialogTitle>
+            <DialogTitle>{t("category.formDialog.editTitle")}</DialogTitle>
             <DialogDescription>
-              Modifiez les informations de la catégorie.
+              {t("category.formDialog.editDescription")}
             </DialogDescription>
           </DialogHeader>
           {editingCategory && (
@@ -201,13 +203,13 @@ function Categories() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Supprimer la catégorie</DialogTitle>
+            <DialogTitle>{t("category.deleteDialog.title")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer{" "}
+              {t("category.deleteDialog.description.1")}
               <span className="font-semibold">
                 {selectedCategory?.name}
               </span>
-              ? Cette action est irréversible.
+              {t("category.deleteDialog.description.2")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -216,14 +218,14 @@ function Categories() {
               onClick={handleCancelDelete}
               disabled={deleting}
             >
-              Annuler
+              {t("category.deleteDialog.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleConfirmDelete}
               disabled={deleting}
             >
-              {deleting ? "Suppression..." : "Supprimer"}
+              {deleting ? t("category.deleteDialog.deleting") : t("category.deleteDialog.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

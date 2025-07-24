@@ -1,0 +1,157 @@
+{
+  "common": {
+    "currency": "{{amount, currency(EUR)}}",
+    "date": "{{date, datetime(year: numeric; month: numeric; day: numeric)}}",
+    "table": {
+      "pagination": {
+        "page_one": "Page {{page}} sur {{nbPage}} ({{count}} resultat)",
+        "page_other": "Page {{page}} sur {{nbPage}} ({{count}} resultats)",
+        "previous": "Précédent",
+        "next": "Suivant"
+      }
+    }
+  },
+  "menu": {
+    "home": "Dashboard",
+    "createSpending": "Ajouter une dépense",
+    "mySpending": "Mes dépenses",
+    "myCategories": "Mes catégories",
+    "loggedInAs": "Connecté en tant que ",
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    },
+    "logout": "Se déconnecter"
+  },
+  "home": {
+    "title": "Dashboard",
+    "stats": {
+      "loading": "Chargement des statistiques...",
+      "empty": "Aucune donnée disponible.",
+      "totalAmountSpend": {
+        "text": "Total des dépenses",
+        "value": "{{value, currency(EUR)}}"
+      },
+      "totalCountExpense": "Nombre d'achats",
+      "charts": {
+        "other": "Autre",
+        "amount": "Montant",
+        "spendingPerCategory": {
+          "title": "Dépenses par catégorie",
+          "description": "Répartition des dépenses par catégorie {{total}}",
+          "empty": "Aucune dépense trouvée pour cette catégorie dans la période sélectionnée."
+        },
+        "monthlySpending": {
+          "title": "Dépenses mensuelles",
+          "desccription": "6 derniers mois",
+          "loading": "Chargement des données...",
+          "empty": "Aucune donnée disponible",
+          "footer": {
+            "perCategory": "Évolution mensuelle des dépenses par catégorie",
+            "6Months": " Répartition des dépenses par catégorie sur les 6 derniers mois"
+          }
+        }
+      }
+    }
+  },
+  "createSpending": {
+    "title": "Ajouter une dépense",
+    "amount": {
+      "label": "Montant (€)"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "ex: Restaurant"
+    },
+    "date": {
+      "label": "Date",
+      "calendarTitle": "Sélectionner une date"
+    },
+    "category": {
+      "label": "Catégorie",
+      "placeholder": "Sélectionner une catégorie",
+      "loading": "Chargement des catégories...",
+      "error": "Erreur de chargement",
+      "empty": "Aucune catégorie disponible",
+      "other": "Autre"
+    },
+    "tags": {
+      "label": "Tags (séparés par des virgules)",
+      "placeholder": "ex: midi,pro"
+    },
+    "submit": "Ajouter",
+    "submitting": "Enregistrement..."
+  },
+  "spending": {
+    "title": "Mes dépenses",
+    "subtitle": "Consultez et filtrez toutes vos dépenses",
+    "loading": "Chargement...",
+    "table": {
+      "title": "Liste des dépenses",
+      "subtitle": {
+        "spendingCount_one": "{{count}} dépense",
+        "spendingCount_other": "{{count}} dépenses",
+        "spendingInCategory": " dans la catégorie {{category}}"
+      },
+      "search": {
+        "placeholder": "Rechercher dans toutes les colonnes..."
+      },
+      "filter": {
+        "byCategoryTitle": "Filtrer par catégorie"
+      },
+      "empty": "Aucune dépense trouvée.",
+      "date": {
+        "header": "Date"
+      },
+      "description": {
+        "header": "Description"
+      },
+      "amount": {
+        "header": "Prix"
+      },
+      "category": {
+        "header": "Catégorie",
+        "other": "Autre"
+      }
+    }
+  },
+  "category": {
+    "title": "Mes Catégories",
+    "loading": "Chargement des catégories...",
+    "empty": "Aucune catégorie trouvée.",
+    "create": "Créer une catégorie",
+    "formDialog": {
+      "createTitle": "Créer une nouvelle catégorie",
+      "createDescription": " Ajoutez une nouvelle catégorie pour organiser vos achats.",
+      "editTitle": "Modifier la catégorie",
+      "editDescription": "Modifiez les informations de la catégorie.",
+      "form": {
+        "name": {
+          "label": "Nom de la catégorie",
+          "placeholder": "Entrez le nom de la catégorie"
+        },
+        "color": {
+          "label": "Couleur"
+        }
+      },
+      "cancel": "Annuler",
+      "edit": "Modifier",
+      "create": "Créer",
+      "submitting": "Enregistrement..."
+    },
+    "deleteDialog": {
+      "title": "Supprimer la catégorie",
+      "description": {
+        "1": "Êtes-vous sûr de vouloir supprimer ",
+        "2": " ? Cette action est irréversible."
+      },
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "deleting": "Suppression..."
+    },
+    "search": {
+      "placeholder": "Rechercher des catégories..."
+    },
+    "creationDate": "Créée le {{date, datetime}}"
+  }
+}

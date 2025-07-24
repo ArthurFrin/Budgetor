@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {useTranslation} from "react-i18next";
 
 interface CategorySelectProps {
   value?: string;
@@ -17,16 +18,17 @@ interface CategorySelectProps {
 export function CategorySelect({ 
   value, 
   onValueChange, 
-  placeholder = "Sélectionner une catégorie",
+  placeholder,
   className 
 }: CategorySelectProps) {
+  const { t } = useTranslation();
   const { categories, loading, error } = useCategories();
 
   if (loading) {
     return (
       <Select disabled>
         <SelectTrigger className={className}>
-          <SelectValue placeholder="Chargement des catégories..." />
+          <SelectValue placeholder={t("createSpending.category.loading")} />
         </SelectTrigger>
       </Select>
     );
@@ -36,7 +38,7 @@ export function CategorySelect({
     return (
       <Select disabled>
         <SelectTrigger className={className}>
-          <SelectValue placeholder="Erreur de chargement" />
+          <SelectValue placeholder={t("createSpending.category.error")} />
         </SelectTrigger>
       </Select>
     );
@@ -45,17 +47,17 @@ export function CategorySelect({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className={className}>
-        <SelectValue placeholder={placeholder} />
+        <SelectValue placeholder={placeholder ?? t("createSpending.category.placeholder")} />
       </SelectTrigger>
       <SelectContent>
         {/* Option "Autre" toujours disponible */}
         <SelectItem value="null" className="font-medium">
-          Autre
+          {t("createSpending.category.other")}
         </SelectItem>
         
         {categories.length === 0 ? (
           <SelectItem value="" disabled>
-            Aucune catégorie disponible
+            {t("createSpending.category.empty")}
           </SelectItem>
         ) : (
           categories.map((category) => (

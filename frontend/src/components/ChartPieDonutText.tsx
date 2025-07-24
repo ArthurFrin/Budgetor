@@ -18,6 +18,7 @@ import {
 
 import { type StatsWithCategories, type TimePeriod } from "@/hooks/use-stats";
 import { DateRangePicker } from "./DateRangePicker";
+import {useTranslation} from "react-i18next";
 
 interface ChartPieDonutTextProps {
   categoriesStats: StatsWithCategories["categoriesStats"];
@@ -28,6 +29,7 @@ export function ChartPieDonutText({
   categoriesStats,
   onPeriodChange,
 }: ChartPieDonutTextProps) {
+  const { t } = useTranslation();
   const chartData = React.useMemo(
     () =>
       categoriesStats.map((c) => ({
@@ -63,14 +65,14 @@ export function ChartPieDonutText({
   return (
     <Card className="flex flex-col w-xl h-fit">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Dépenses par catégorie</CardTitle>
+        <CardTitle>{t("home.stats.charts.spendingPerCategory.title")}</CardTitle>
         <CardDescription className="w-full">
           <DateRangePicker onDateRangeChange={handleDateRangeChange} />
         </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0 relative">
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-lg font-bold w-28 h-28 flex items-center justify-center">
-          {totalAmount.toFixed(2)} €
+          {t("common.currency", {amount: totalAmount})}
         </div>
         <ChartContainer
           config={chartConfig}
@@ -93,7 +95,7 @@ export function ChartPieDonutText({
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="text-muted-foreground leading-none">
-          Répartition des dépenses par catégorie {totalAmount.toFixed(2)} €
+          {t("home.stats.charts.spendingPerCategory.description", {total: totalAmount})}
         </div>
       </CardFooter>
     </Card>

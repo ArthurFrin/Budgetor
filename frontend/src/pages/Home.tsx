@@ -3,8 +3,10 @@ import { useStats, type TimePeriod } from "@/hooks/use-stats";
 import { ChartPieDonutText } from "@/components/ChartPieDonutText";
 import { ChartBarStacked } from "@/components/ChartBarStacked";
 import { ChatAssistant } from "@/components/ChatAssistant";
+import {useTranslation} from "react-i18next";
 
 function Home() {
+  const { t } = useTranslation();
   // État pour la catégorie sélectionnée
   const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
   
@@ -30,21 +32,21 @@ function Home() {
   
   return (
     <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">{t("home.title")}</h1>
       
       {loading && !stats ? (
-        <p>Chargement des statistiques...</p>
+        <p>{t("home.stats.loading")}</p>
       ) : error ? (
         <div className="text-red-500">{error}</div>
       ) : stats ? (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h2 className="text-lg font-semibold text-gray-700">Total des dépenses</h2>
-              <p className="text-2xl font-bold text-blue-600">{stats.totalAmount.toFixed(2)} €</p>
+              <h2 className="text-lg font-semibold text-gray-700">{t("home.stats.totalAmountSpend.text")}</h2>
+              <p className="text-2xl font-bold text-blue-600">{t("home.stats.totalAmountSpend.value", {value: stats.totalAmount})}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-lg">
-              <h2 className="text-lg font-semibold text-gray-700">Nombre d'achats</h2>
+              <h2 className="text-lg font-semibold text-gray-700">{t("home.stats.totalCountExpense")}</h2>
               <p className="text-2xl font-bold text-green-600">{stats.totalCount}</p>
             </div>
           </div>
@@ -58,7 +60,7 @@ function Home() {
               <ChartBarStacked onPeriodChange={handlePeriodChange} />
             </div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold">Dépenses par catégorie</h3>
+              <h3 className="text-lg font-semibold">{t("home.stats.charts.spendingPerCategory.title")}</h3>
             </div>
             
             <div className="flex flex-wrap gap-2 mb-4">
@@ -111,7 +113,7 @@ function Home() {
                 ))
               ) : (
                 <li className="p-4 text-center text-gray-500 bg-gray-50 rounded-lg">
-                  Aucune dépense trouvée pour cette catégorie dans la période sélectionnée.
+                  {t("home.stats.charts.spendingPerCategory.empty")}
                 </li>
               )}
             </ul>
@@ -119,7 +121,7 @@ function Home() {
           
         </div>
       ) : (
-        <p>Aucune donnée disponible.</p>
+        <p>{t("home.stats.empty")}</p>
       )}
             
             

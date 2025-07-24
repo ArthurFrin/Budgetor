@@ -1,0 +1,157 @@
+{
+  "common": {
+    "currency": "{{amount, currency(EUR)}}",
+    "date": "{{date, datetime(year: numeric; month: numeric; day: numeric)}}",
+    "table": {
+      "pagination": {
+        "page_one": "Page {{page}} of {{nbPage}} ({{count}} result)",
+        "page_other": "Page {{page}} of {{nbPage}} ({{count}} results)",
+        "previous": "Previous",
+        "next": "Next"
+      }
+    }
+  },
+  "menu": {
+    "home": "Dashboard",
+    "createSpending": "Add Spending",
+    "mySpending": "My Spendings",
+    "myCategories": "My Categories",
+    "loggedInAs": "Logged in as ",
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    },
+    "logout": "Log out"
+  },
+  "home": {
+    "title": "Dashboard",
+    "stats": {
+      "loading": "Loading statistics...",
+      "empty": "No data available",
+      "totalAmountSpend": {
+        "text": "Total Spending",
+        "value": "{{value, currency(EUR)}}"
+      },
+      "totalCountExpense": "Number of Purchases",
+      "charts": {
+        "other": "Other",
+        "amount": "Amount",
+        "spendingPerCategory": {
+          "title": "Spending by Category",
+          "description": "Spending breakdown by category {{total}}",
+          "empty": "No spending found for this category within this time frame"
+        },
+        "monthlySpending": {
+          "title": "Monthly Spending",
+          "description": "Last 6 months",
+          "loading": "Loading data...",
+          "empty": "No data available",
+          "footer": {
+            "perCategory": "Monthly spending trends by category",
+            "6Months": "Spending breakdown by category over the last 6 months"
+          }
+        }
+      }
+    }
+  },
+  "createSpending": {
+    "title": "Add a Spending",
+    "amount": {
+      "label": "Amount (€)"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "e.g. Restaurant"
+    },
+    "date": {
+      "label": "Date",
+      "calendarTitle": "Select a date"
+    },
+    "category": {
+      "label": "Category",
+      "placeholder": "Pick a category",
+      "loading": "Loading categories...",
+      "error": "Error loading categories",
+      "empty": "No categories found",
+      "other": "Other"
+    },
+    "tags": {
+      "label": "Tags (separated by commas)",
+      "placeholder": "e.g. lunch,business"
+    },
+    "submit": "Add",
+    "submitting": "Saving..."
+  },
+  "spending": {
+    "title": "My Spendings",
+    "subtitle": "View and filter all your expenses",
+    "loading": "Loading...",
+    "table": {
+      "title": "List of Spendings",
+      "subtitle": {
+        "spendingCount_one": "{{count}} spending",
+        "spendingCount_other": "{{count}} spendings",
+        "spendingInCategory": " in category {{category}}"
+      },
+      "search": {
+        "placeholder": "Search across all columns..."
+      },
+      "filter": {
+        "byCategoryTitle": "Filter by category"
+      },
+      "empty": "No spendings found.",
+      "date": {
+        "header": "Date"
+      },
+      "description": {
+        "header": "Description"
+      },
+      "amount": {
+        "header": "Price"
+      },
+      "category": {
+        "header": "Category",
+        "other": "Other"
+      }
+    }
+  },
+  "category": {
+    "title": "My Categories",
+    "loading": "Loading categories...",
+    "empty": "No categories found.",
+    "create": "Create a Category",
+    "formDialog": {
+      "createTitle": "Create a New Category",
+      "createDescription": "Add a new category to organize your purchases.",
+      "editTitle": "Edit Category",
+      "editDescription": "Edit the category information.",
+      "form": {
+        "name": {
+          "label": "Category Name",
+          "placeholder": "Enter the category name"
+        },
+        "color": {
+          "label": "Color"
+        }
+      },
+      "cancel": "Cancel",
+      "edit": "Edit",
+      "create": "Create",
+      "submitting": "Saving..."
+    },
+    "deleteDialog": {
+      "title": "Delete Category",
+      "description": {
+        "1": "Are you sure you want to delete ",
+        "2": "? This action cannot be undone."
+      },
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleting": "Deleting..."
+    },
+    "search": {
+      "placeholder": "Search categories..."
+    },
+    "creationDate": "Created on $t(common.date)"
+  }
+}
